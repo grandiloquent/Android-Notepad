@@ -7,6 +7,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
+
 import org.javia.arity.Symbols;
 import org.javia.arity.SyntaxException;
 import org.javia.arity.Util;
@@ -23,20 +24,46 @@ public class EditNoteActivity extends Activity {
 
     private static final int MENU_CALCULATE = 0x3;
     private static final int MENU_FORMAT = 0x2;
-
+    private static final int MENU_S_ASTERISK = 0x11;
     private static final int MENU_S_CODE = 0x5;
+    private static final int MENU_S_DIVIDE = 0x10;
     private static final int MENU_S_HEAD = 0x6;
     private static final int MENU_S_PARENTHESIS = 0x7;
     private static final int MENU_S_SUBTRACTION = 0x8;
-    private static final int MENU_S_DIVIDE = 0x10;
-    private static final int MENU_S_ASTERISK = 0x11;
-
     private EditText mEditText;
     private boolean mFinished = false;
     private Note mNote;
     private Symbols mSymbols;
 
     private boolean mUpdated = false;
+
+    private void bindButton() {
+        findViewById(R.id.item1).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                replaceString(MENU_S_PARENTHESIS);
+            }
+        });
+        findViewById(R.id.item2).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                replaceString(MENU_S_SUBTRACTION);
+            }
+        });
+        findViewById(R.id.item3).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                replaceString(MENU_S_ASTERISK);
+            }
+        });
+        findViewById(R.id.item4).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                replaceString(MENU_S_CODE);
+            }
+        });
+
+    }
 
     private void calculateExpression() {
         if (mSymbols == null) {
@@ -69,21 +96,15 @@ public class EditNoteActivity extends Activity {
         mEditText.setText(stringBuilder.toString());
     }
 
-    private void updateNote() {
-        String content = mEditText.getText().toString();
-        if (content == null || content.trim().length() == 0) return;
-        if (mNote == null) {
-            mNote = new Note();
-
-            mNote.Title = content.split("\n")[0].trim();
-            mNote.Content = content.trim();
-            Databases.getInstance().insert(mNote);
-        } else {
-            mNote.Title = content.split("\n")[0].trim();
-            mNote.Content = content.trim();
-            Databases.getInstance().update(mNote);
+    @Override
+    public void finish() {
+        updateNote();
+        if (mUpdated) {
+            setResult(RESULT_OK);
         }
-        mUpdated = true;
+        mFinished = true;
+        super.finish();
+
     }
 
     @Override
@@ -93,10 +114,24 @@ public class EditNoteActivity extends Activity {
     }
 
     @Override
-    protected void onPause() {
-        if (!mFinished)
-            updateNote();
-        super.onPause();
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_editor);
+        mEditText = (EditText) findViewById(R.id.edit_text);
+
+
+        Intent intent = getIntent();
+
+        long id = intent.getLongExtra(EXTRA_ID, 0);
+
+        if (id != 0) {
+            mNote = Databases.getInstance().fetchNote(id);
+            mNote.ID = id;
+
+            mEditText.setText(mNote.Content);
+
+        }
+        bindButton();
     }
 
     @Override
@@ -142,14 +177,10 @@ public class EditNoteActivity extends Activity {
     }
 
     @Override
-    public void finish() {
-        updateNote();
-        if (mUpdated) {
-            setResult(RESULT_OK);
-        }
-        mFinished = true;
-        super.finish();
-
+    protected void onPause() {
+        if (!mFinished)
+            updateNote();
+        super.onPause();
     }
 
     private void replaceString(int type) {
@@ -187,51 +218,20 @@ public class EditNoteActivity extends Activity {
         mEditText.setSelection(si);
     }
 
-    private void bindButton() {
-        findViewById(R.id.item1).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                replaceString(MENU_S_PARENTHESIS);
-            }
-        });
-        findViewById(R.id.item2).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                replaceString(MENU_S_SUBTRACTION);
-            }
-        });
-        findViewById(R.id.item3).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                replaceString(MENU_S_ASTERISK);
-            }
-        });
-        findViewById(R.id.item4).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                replaceString(MENU_S_CODE);
-            }
-        });
+    private void updateNote() {
+        String content = mEditText.getText().toString();
+        if (content == null || content.trim().length() == 0) return;
+        if (mNote == null) {
+            mNote = new Note();
 
-    }
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_editor);
-        mEditText = (EditText) findViewById(R.id.edit_text);
-
-
-        Intent intent = getIntent();
-
-        long id = intent.getLongExtra(EXTRA_ID, 0);
-
-        if (id != 0) {
-            mNote = Databases.getInstance().fetchNote(id);
-            mNote.ID = id;
-
-            mEditText.setText(mNote.Content);
-
+            mNote.Title = content.split("\n")[0].trim();
+            mNote.Content = content.trim();
+            Databases.getInstance().insert(mNote);
+        } else {
+            mNote.Title = content.split("\n")[0].trim();
+            mNote.Content = content.trim();
+            Databases.getInstance().update(mNote);
         }
-        bindButton();
+        mUpdated = true;
     }
 }
