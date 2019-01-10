@@ -20,4 +20,6 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.github.clans:fab:1.6.4'
+    compile group: 'com.atlassian.commonmark', name: 'commonmark', version: '0.12.1'
+
 }
