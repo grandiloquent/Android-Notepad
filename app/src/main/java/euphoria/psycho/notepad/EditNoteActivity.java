@@ -32,41 +32,11 @@ public class EditNoteActivity extends Activity {
     private static final int MENU_S_DIVIDE = 0x10;
     private static final int MENU_S_HEAD = 0x6;
     private static final int MENU_S_PARENTHESIS = 0x7;
+    private static final int MENU_S_SORT_BY = 0x7;
+    private static final int MENU_S_SORT_BY_YEAR = 0x8;
     private static final int MENU_S_SUBTRACTION = 0x8;
     private EditText mEditText;
-    private final ActionMode.Callback mSelectionActionMode = new ActionMode.Callback() {
-        @Override
-        public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-            switch (item.getItemId()) {
-                case R.id.action_sort: {
-                    actionSort();
-                    break;
-                }
-                case R.id.action_sort_by_year: {
-                    actionSortByYear();
-                    break;
-                }
-            }
-            return true;
-        }
 
-        @Override
-        public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-
-            getMenuInflater().inflate(R.menu.action_mode, menu);
-            return true;
-        }
-
-        @Override
-        public void onDestroyActionMode(ActionMode mode) {
-
-        }
-
-        @Override
-        public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-            return false;
-        }
-    };
     private boolean mFinished = false;
     private Note mNote;
     private Symbols mSymbols;
@@ -269,9 +239,12 @@ public class EditNoteActivity extends Activity {
         if (s == null) return null;
         String[] lines = s.split("\n");
         List<String> sortLines = new ArrayList<>();
-        for (String l : lines) {
-            String s2 = l.trim();
+        String ch = new String(Character.toChars(160));
 
+        for (String l : lines) {
+            String s2 = l.trim().replace(ch," ");
+            // Immoral Tales (1973)
+            int i = sortLines.indexOf(s2);
             if (s2.length() == 0 || sortLines.indexOf(s2) != -1) continue;
             sortLines.add(s2);
         }
@@ -301,7 +274,6 @@ public class EditNoteActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
         mEditText = findViewById(R.id.edit_text);
-        mEditText.setCustomSelectionActionModeCallback(mSelectionActionMode);
 
         Intent intent = getIntent();
 
@@ -325,6 +297,8 @@ public class EditNoteActivity extends Activity {
         menu.add(0, MENU_S_HEAD, 0, "标题");
 
         menu.add(0, MENU_S_DIVIDE, 0, "/");
+        menu.add(0, MENU_S_SORT_BY, 0, "排序");
+        menu.add(0, MENU_S_SORT_BY_YEAR, 0, "排序(年代)");
 
         return super.onCreateOptionsMenu(menu);
     }
@@ -349,7 +323,12 @@ public class EditNoteActivity extends Activity {
                 }
                 mEditText.setText(stringBuilder.toString());
                 return true;
-
+            case MENU_S_SORT_BY:
+                actionSort();
+                return true;
+            case MENU_S_SORT_BY_YEAR:
+                actionSortByYear();
+                return true;
             case MENU_S_HEAD:
 
             case MENU_S_DIVIDE:

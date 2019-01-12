@@ -63,6 +63,8 @@ public class MainActivity extends Activity {
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 if (charSequence != null && charSequence.toString().trim().length() > 0) {
                     mNoteAdapter.switchData(Databases.getInstance().searchTitle(charSequence.toString().trim()));
+                } else {
+                    mNoteAdapter.switchData(Databases.getInstance().fetchTitles());
                 }
             }
 
