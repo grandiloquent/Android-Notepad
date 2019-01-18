@@ -12,13 +12,17 @@ import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
 
+import euphoria.psycho.notepad.server.ServerActivity;
+
 public class MainActivity extends Activity {
 
     private static final int ACTIVITY_EDIT = 0x1;
     private static final int ACTIVITY_VIEW = 0x2;
-    private static final int CONTEXT_MENU_EDIT_NOTE = 0x1;
     private static final int CONTEXT_MENU_DELETE_NOTE = 0x2;
+    private static final int CONTEXT_MENU_EDIT_NOTE = 0x1;
     private static final int MENU_ADD_NOTE = 0x1;
+    private static final int MENU_START_SERVER = 0x2;
+
     private EditText mEditText;
     private ListView mListView;
     private NoteAdapter mNoteAdapter;
@@ -26,6 +30,11 @@ public class MainActivity extends Activity {
     private void addNote() {
         Intent intent = new Intent(this, EditNoteActivity.class);
         startActivityForResult(intent, ACTIVITY_EDIT);
+    }
+
+    private void deleteNote(Note note) {
+        Databases.getInstance().deleteNote(note);
+        refreshListView();
     }
 
     private void editNote(long id) {
@@ -44,16 +53,16 @@ public class MainActivity extends Activity {
 
         mListView.setAdapter(mNoteAdapter);
 
-        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                viewNote(mNoteAdapter.getItem(i).ID);
-            }
-        });
+        mListView.setOnItemClickListener((adapterView, view, i, l) -> viewNote(mNoteAdapter.getItem(i).ID));
 
         mEditText = findViewById(R.id.edit_text);
 
         mEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
@@ -66,11 +75,6 @@ public class MainActivity extends Activity {
                 } else {
                     mNoteAdapter.switchData(Databases.getInstance().fetchTitles());
                 }
-            }
-
-            @Override
-            public void afterTextChanged(Editable editable) {
-
             }
         });
         mEditText.setOnKeyListener(new View.OnKeyListener() {
@@ -92,6 +96,11 @@ public class MainActivity extends Activity {
         mNoteAdapter.switchData(Databases.getInstance().fetchTitles());
     }
 
+    private void startServer() {
+        Intent intent = new Intent(this, ServerActivity.class);
+        startActivity(intent);
+    }
+
     private void viewNote(long id) {
         Intent intent = new Intent(this, ViewActivity.class);
         intent.putExtra(Constants.EXTRA_ID, id);
@@ -99,48 +108,11 @@ public class MainActivity extends Activity {
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        SharedUtils.setContext(this);
-        super.onCreate(savedInstanceState);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            int r = 99;
-            requestPermissions(new String[]{
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-            }, r);
-            return;
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == RESULT_OK && (requestCode == ACTIVITY_EDIT || requestCode == ACTIVITY_VIEW)) {
+            refreshListView();
         }
-        initialize();
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(0, MENU_ADD_NOTE, 0, "添加笔记");
-        return super.onCreateOptionsMenu(menu);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case MENU_ADD_NOTE:
-                addNote();
-                return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-        menu.add(0, CONTEXT_MENU_EDIT_NOTE, 0, "编辑笔记");
-        menu.add(0, CONTEXT_MENU_DELETE_NOTE, 0, "删除笔记");
-
-        super.onCreateContextMenu(menu, v, menuInfo);
-    }
-
-    private void deleteNote(Note note) {
-        Databases.getInstance().deleteNote(note);
-        refreshListView();
     }
 
     @Override
@@ -160,16 +132,53 @@ public class MainActivity extends Activity {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    protected void onCreate(Bundle savedInstanceState) {
+        SharedUtils.setContext(this);
+        super.onCreate(savedInstanceState);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            int r = 99;
+            requestPermissions(new String[]{
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+            }, r);
+            return;
+        }
         initialize();
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK && (requestCode == ACTIVITY_EDIT || requestCode == ACTIVITY_VIEW)) {
-            refreshListView();
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        menu.add(0, CONTEXT_MENU_EDIT_NOTE, 0, "编辑笔记");
+        menu.add(0, CONTEXT_MENU_DELETE_NOTE, 0, "删除笔记");
+
+        super.onCreateContextMenu(menu, v, menuInfo);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        menu.add(0, MENU_ADD_NOTE, 0, "添加笔记");
+        menu.add(0, MENU_START_SERVER, 0, "服务");
+
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case MENU_ADD_NOTE:
+                addNote();
+                return true;
+            case MENU_START_SERVER:
+                startServer();
+                return true;
         }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        initialize();
     }
 }

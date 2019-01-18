@@ -20,6 +20,9 @@
 
         <activity android:name=".EditNoteActivity" android:windowSoftInputMode="adjustResize"></activity>
         <activity android:name=".ViewActivity"></activity>
+        <activity android:name=".server.ServerActivity" />
+
+        <service android:name=".server.ServerService" />
     </application>
 
 </manifest>

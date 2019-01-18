@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" class="_theme-default fa-events-icons-failed">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/simplemde/1.11.2/simplemde.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/simplemde/1.11.2/simplemde.min.js"></script>
+    <link rel="stylesheet" href="editor.css" />
+</head>
+
+<body>
+    <div class="_app">
+        <header class="_header" role="banner">
+            <form class="_search" role="search">
+                <svg>
+                    <use xlink:href="#icon-search"></use>
+                </svg>
+                <input type="search" name="q" class="_search-input" autocomplete="off" autocapitalize="off" autocorrect="off"
+                    spellcheck="false" maxlength="30" aria-label="Search" style="padding-left: 53px;">
+                <button type="reset" class="_search-clear" title="Clear search"><svg>
+                        <use xlink:href="#icon-close"></use>
+                    </svg>Clear search</button>
+                <div class="_search-tag" style="display: block;">DOM</div>
+            </form>
+            <button type="button" aria-label="Toggle menu" title="Toggle menu" class="_header-btn _menu-btn"
+                data-toggle-menu="">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path>
+                </svg>
+            </button>
+        </header>
+        <section class="_sidebar" tabindex="-1">
+            <div role="navigation" class="_list">
+                <div role="navigation" class="_list">
+                    {{list}}
+                </div>
+            </div>
+        </section>
+        <div class="_container">
+            <main class="_content">
+                <textarea id="edit-text"></textarea>
+            </main>
+        </div>
+    </div>
+
+    </div>
+    <script src="editor.js"></script>
+</body>
+
+</html>
