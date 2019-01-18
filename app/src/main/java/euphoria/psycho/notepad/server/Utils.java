@@ -564,9 +564,6 @@ public class Utils {
         return null;
     }
 
-    static List<File> getVideoFiles(String[] directories) {
-        return listFilesRecursivelyInDirectories(directories, mVideoExtensions);
-    }
 
     public static InetAddress intToInetAddress(int hostAddress) {
         byte[] addressBytes = {(byte) (0xff & hostAddress),

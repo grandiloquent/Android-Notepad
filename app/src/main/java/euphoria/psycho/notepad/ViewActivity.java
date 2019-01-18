@@ -17,6 +17,9 @@ import android.view.MenuItem;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import org.commonmark.Extension;
+import org.commonmark.ext.gfm.tables.TablesExtension;
 import org.commonmark.node.Node;
 import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
@@ -25,7 +28,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.text.Format;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -243,9 +248,15 @@ public class ViewActivity extends Activity {
     }
 
     private void markdown2html(String text) {
-        Parser parser = Parser.builder().build();
+        List<Extension> extensions = Arrays.asList(TablesExtension.create());
+        Parser parser = Parser.builder()
+                .extensions(extensions)
+                .build();
         Node document = parser.parse(text);
-        HtmlRenderer renderer = HtmlRenderer.builder().build();
+
+        HtmlRenderer renderer = HtmlRenderer.builder()
+                .extensions(extensions)
+                .build();
         String content = renderer.render(document);
         String patternString = SharedUtils.readStringFromFile(new File(Environment.getExternalStorageDirectory(), "/Notes/dom.html"));
 

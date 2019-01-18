@@ -37,7 +37,6 @@ import static euphoria.psycho.notepad.server.Utils.closeQuietly;
 import static euphoria.psycho.notepad.server.Utils.findVideoFile;
 import static euphoria.psycho.notepad.server.Utils.getDefaultReason;
 import static euphoria.psycho.notepad.server.Utils.getMimeTypeTable;
-import static euphoria.psycho.notepad.server.Utils.getVideoFiles;
 import static euphoria.psycho.notepad.server.Utils.isVideo;
 import static euphoria.psycho.notepad.server.Utils.lookup;
 import static euphoria.psycho.notepad.server.Utils.parseHeaders;
@@ -93,18 +92,15 @@ public class SimpleServer {
     private final String mStaticDirectory;
     private final String mURL;
     private final String mUploadDirectory;
-    private final String[] mVideoDirectory;
     private byte[] mBytesTemplate;
     private int mPort;
     private Thread mThread;
-    private List<File> mVideoFiles;
 
 
     private SimpleServer(Builder builder) throws IOException {
 
         mPort = builder.mPort;
         mStaticDirectory = builder.mStaticDirectory;
-        mVideoDirectory = builder.mVideoDirectory;
         mUploadDirectory = builder.mUploadDirectory;
         InetAddress address = InetAddress.getByName(builder.mHost);
         byte[] bytes = address.getAddress();
@@ -117,7 +113,6 @@ public class SimpleServer {
         // Log.d(TAG, "[SimpleServer] ---> " + mURL);
         mExecutorService = Executors.newFixedThreadPool(4);
 
-        mVideoFiles = getVideoFiles(mVideoDirectory);
 
         startServer();
     }
@@ -209,37 +204,6 @@ public class SimpleServer {
         return headers;
     }
 
-    private byte[] generateItems() throws IOException {
-        byte[][] buffer = new byte[][]{
-/* 0 href */new byte[]{60, 100, 105, 118, 32, 99, 108, 97, 115, 115, 61, 34, 109, 101, 100, 105, 97, 45, 105, 116, 101, 109, 34, 62, 60, 97, 32, 104, 114, 101, 102, 61, 34, 63, 113, 61},
-/* 1 src */new byte[]{34, 62, 60, 100, 105, 118, 32, 99, 108, 97, 115, 115, 61, 34, 118, 105, 100, 101, 111, 45, 116, 104, 117, 109, 98, 110, 97, 105, 108, 45, 99, 111, 110, 116, 97, 105, 110, 101, 114, 45, 108, 97, 114, 103, 101, 32, 99, 101, 110, 116, 101, 114, 34, 62, 60, 100, 105, 118, 32, 99, 108, 97, 115, 115, 61, 34, 99, 111, 118, 101, 114, 32, 118, 105, 100, 101, 111, 45, 116, 104, 117, 109, 98, 110, 97, 105, 108, 45, 105, 109, 103, 32, 118, 105, 100, 101, 111, 45, 116, 104, 117, 109, 98, 110, 97, 105, 108, 45, 98, 103, 34, 62, 60, 47, 100, 105, 118, 62, 60, 105, 109, 103, 32, 99, 108, 97, 115, 115, 61, 34, 99, 111, 118, 101, 114, 32, 118, 105, 100, 101, 111, 45, 116, 104, 117, 109, 98, 110, 97, 105, 108, 45, 105, 109, 103, 34, 32, 115, 114, 99, 61, 34},
-/* 2 href */new byte[]{34, 62, 60, 100, 105, 118, 32, 99, 108, 97, 115, 115, 61, 34, 118, 105, 100, 101, 111, 45, 116, 104, 117, 109, 98, 110, 97, 105, 108, 45, 111, 118, 101, 114, 108, 97, 121, 45, 98, 111, 116, 116, 111, 109, 45, 103, 114, 111, 117, 112, 34, 62, 60, 100, 105, 118, 32, 99, 108, 97, 115, 115, 61, 34, 46, 116, 105, 109, 101, 45, 108, 97, 98, 101, 108, 34, 62, 60, 115, 112, 97, 110, 62, 60, 47, 115, 112, 97, 110, 62, 60, 47, 100, 105, 118, 62, 60, 47, 100, 105, 118, 62, 60, 47, 100, 105, 118, 62, 60, 47, 97, 62, 60, 100, 105, 118, 32, 99, 108, 97, 115, 115, 61, 34, 100, 101, 116, 97, 105, 108, 115, 34, 62, 60, 100, 105, 118, 32, 99, 108, 97, 115, 115, 61, 34, 108, 97, 114, 103, 101, 45, 109, 101, 100, 105, 97, 45, 105, 116, 101, 109, 45, 105, 110, 102, 111, 32, 99, 98, 111, 120, 34, 62, 60, 97, 32, 99, 108, 97, 115, 115, 61, 34, 108, 97, 114, 103, 101, 45, 109, 101, 100, 105, 97, 45, 105, 116, 101, 109, 45, 109, 101, 116, 97, 100, 97, 116, 97, 34, 32, 104, 114, 101, 102, 61, 34, 63, 113, 61},
-/* 3 titles */new byte[]{34, 62, 60, 104, 51, 62},
-/* 4  */new byte[]{60, 47, 104, 51, 62, 60, 47, 97, 62, 60, 47, 100, 105, 118, 62, 60, 47, 100, 105, 118, 62, 60, 47, 100, 105, 118, 62},
-        };
-
-
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-
-        if (mVideoFiles != null) {
-            for (File f : mVideoFiles) {
-                String name = f.getName();
-                byte[] href = name.getBytes(UTF_8);//URLEncoder.encode(name, UTF_8).getBytes(UTF_8);
-                os.write(buffer[0]);
-                os.write(href);
-                os.write(buffer[1]);
-                os.write(URLEncoder.encode(name + ".png", UTF_8).getBytes(UTF_8));
-                os.write(buffer[2]);
-                os.write(href);
-                os.write(buffer[3]);
-                os.write(f.getName().getBytes(UTF_8));
-                os.write(buffer[4]);
-
-            }
-        }
-        return os.toByteArray();
-
-    }
 
     private FormHeader getFormHeader(byte[] data, int offset) {
         int index = lookup(data, BYTES_LINE_FEED, offset);
@@ -263,42 +227,7 @@ public class SimpleServer {
         return mURL;
     }
 
-    private void index(Socket socket) {
-        try {
 
-            OutputStream os = socket.getOutputStream();
-            List<String> headers = new ArrayList<>();
-
-            headers.add(HTTP_CONTENT_TYPE);
-            headers.add(mMimeTypes.get(".html") + "; charset=UTF-8");//  "; charset=UTF-8"
-            headers.add(HTTP_CACHE_CONTROL);
-            headers.add("no-cache");
-            headers.add(HTTP_DATE);
-            headers.add(new SimpleDateFormat(DATE_FORMAT_GMT, Locale.US).format(new Date()));
-            // 如果设置 HTTP_CONTENT_LENGTH
-            // 客户端只会接收相应长度的字符
-            // 其他的数据将被忽略
-
-            byte[] header = responseHeader(200, headers).getBytes(UTF_8);
-            os.write(header);
-            os.write(mBytesIndex[0]);
-
-            if (mBytesTemplate == null) {
-
-                mBytesTemplate = generateItems();
-            }
-            os.write(mBytesTemplate);
-
-            os.write(mBytesDropZone);
-            os.write(mBytesIndex[1]);
-            os.flush();
-
-        } catch (Exception e) {
-            e(e);
-        } finally {
-            closeQuietly(socket);
-        }
-    }
 
     private void jsonGet(Socket socket, String url) {
         // Log.d(TAG, "[jsonGet] ---> ");

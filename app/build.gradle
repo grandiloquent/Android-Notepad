@@ -4,7 +4,7 @@ android {
     compileSdkVersion 28
     defaultConfig {
         applicationId "euphoria.psycho.notepad"
-        minSdkVersion 19
+        minSdkVersion 21
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
@@ -22,8 +22,9 @@ android {
 }
 
 dependencies {
-    implementation 'com.github.clans:fab:1.6.4'
     implementation "com.atlassian.commonmark:commonmark:0.12.1"
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'com.google.zxing:core:3.3.3'
+    // https://mvnrepository.com/artifact/com.atlassian.commonmark/commonmark-ext-gfm-tables
+    implementation "com.atlassian.commonmark:commonmark-ext-gfm-tables:0.12.1"
 }

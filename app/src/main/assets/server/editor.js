@@ -1,5 +1,8 @@
 ;
 (function () {
+
+
+
     'use strict';
     var Editor = function Editor(element) {
         this.element = element;
@@ -43,7 +46,7 @@
         array = array.sort().filter(function (el, i, a) {
             return i === a.indexOf(el)
         })
-        this.mde.value(array.join("\n"));
+        cm.replaceSelection(array.join("\n"));
     }
     Editor.prototype.onUpdate = function () {
         var obj = this.collect();

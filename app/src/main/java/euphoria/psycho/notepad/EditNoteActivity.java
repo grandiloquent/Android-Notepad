@@ -8,6 +8,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.Toolbar;
 
 import org.javia.arity.Symbols;
 import org.javia.arity.SyntaxException;
@@ -20,6 +21,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static euphoria.psycho.notepad.C.isNullOrWhiteSpace;
+import static euphoria.psycho.notepad.C.showSoftInput;
 import static euphoria.psycho.notepad.Constants.EXTRA_ID;
 
 
@@ -40,7 +43,63 @@ public class EditNoteActivity extends Activity {
     private boolean mFinished = false;
     private Note mNote;
     private Symbols mSymbols;
+    private Toolbar mToolbar;
     private boolean mUpdated = false;
+
+    private void actionBracket() {
+        insert("()");
+    }
+
+    private void insert(String str) {
+        CharSequence text = mEditText.getText();
+        if (isNullOrWhiteSpace(text)) {
+            mEditText.setText(str);
+            mEditText.setSelection(1);
+            return;
+        }
+        int start = mEditText.getSelectionStart();
+
+        String s = text.subSequence(0, start) + str + text.subSequence(start, text.length());
+        mEditText.setText(s);
+        mEditText.setSelection(start + 1);
+
+    }
+
+    private void actionCode() {
+        insert("``");
+    }
+
+    private void actionHead() {
+        CharSequence text = mEditText.getText();
+        if (isNullOrWhiteSpace(text)) {
+            mEditText.setText("# ");
+            mEditText.setSelection(2);
+            return;
+        }
+        int start = mEditText.getSelectionStart();
+        int oStart = start;
+        while (start - 1 > -1) {
+            start--;
+            if (text.charAt(start) == '\n') {
+                start++;
+                break;
+            }
+
+        }
+        String addString = "";
+        if (text.charAt(start) == '#') {
+            addString = "#";
+        } else {
+            addString = "# ";
+        }
+        String s = text.subSequence(0, start) + addString + text.subSequence(start, text.length());
+        mEditText.setText(s);
+        mEditText.setSelection(oStart + addString.length());
+    }
+
+    private void actionLink() {
+        insert("[]()");
+    }
 
     private void actionSort() {
         String s = getSelectedText(mEditText);
@@ -79,33 +138,10 @@ public class EditNoteActivity extends Activity {
         }
     }
 
-    private void bindButton() {
-        findViewById(R.id.item1).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                replaceString(MENU_S_PARENTHESIS);
-            }
-        });
-        findViewById(R.id.item2).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                replaceString(MENU_S_SUBTRACTION);
-            }
-        });
-        findViewById(R.id.item3).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                replaceString(MENU_S_ASTERISK);
-            }
-        });
-        findViewById(R.id.item4).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                replaceString(MENU_S_CODE);
-            }
-        });
-
+    private void actionStar() {
+        insert("*");
     }
+
 
     private void calculateExpression() {
         if (mSymbols == null) {
@@ -173,6 +209,40 @@ public class EditNoteActivity extends Activity {
         mEditText.setSelection(si);
     }
 
+    private void setupToolbar() {
+        mToolbar.inflateMenu(R.menu.bottom);
+        mToolbar.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case R.id.action_star: {
+                    actionStar();
+                    return true;
+                }
+
+                case R.id.action_code: {
+                    actionCode();
+                    return true;
+                }
+
+                case R.id.action_head: {
+                    actionHead();
+                    return true;
+                }
+
+                case R.id.action_link: {
+                    actionLink();
+                    return true;
+                }
+
+                case R.id.action_bracket: {
+                    actionBracket();
+                    return true;
+                }
+
+            }
+            return false;
+        });
+    }
+
     private void updateNote() {
         String content = mEditText.getText().toString();
         if (content == null || content.trim().length() == 0) return;
@@ -202,14 +272,6 @@ public class EditNoteActivity extends Activity {
         return null;
     }
 
-    public static boolean isNullOrWhiteSpace(CharSequence charSequence) {
-        if (charSequence == null) return true;
-        int length = charSequence.length();
-        for (int i = 0; i < length; i++) {
-            if (!Character.isWhitespace(charSequence.charAt(i))) return false;
-        }
-        return true;
-    }
 
     public static <T> String joining(List<T> list, String separator) {
         StringBuilder builder = new StringBuilder();
@@ -242,7 +304,7 @@ public class EditNoteActivity extends Activity {
         String ch = new String(Character.toChars(160));
 
         for (String l : lines) {
-            String s2 = l.trim().replace(ch," ");
+            String s2 = l.trim().replace(ch, " ");
             // Immoral Tales (1973)
             int i = sortLines.indexOf(s2);
             if (s2.length() == 0 || sortLines.indexOf(s2) != -1) continue;
@@ -274,6 +336,7 @@ public class EditNoteActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
         mEditText = findViewById(R.id.edit_text);
+        mToolbar = findViewById(R.id.toolbar);
 
         Intent intent = getIntent();
 
@@ -286,7 +349,7 @@ public class EditNoteActivity extends Activity {
             mEditText.setText(mNote.Content);
 
         }
-        bindButton();
+        setupToolbar();
     }
 
     @Override
