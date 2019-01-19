@@ -15,6 +15,35 @@
         android:scrollbars="vertical"
         android:textSize="15sp" />
 
+    <euphoria.psycho.notepad.ui.BottomBar
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="#ffffff">
+
+        <ImageButton
+            android:id="@+id/bold"
+            style="@style/ToolbarButton"
+            android:src="@drawable/ic_action_b" />
+        <ImageButton
+            android:id="@+id/head"
+            style="@style/ToolbarButton"
+            android:src="@drawable/ic_action_h" />
+        <ImageButton
+            android:id="@+id/list"
+            style="@style/ToolbarButton"
+            android:src="@drawable/ic_action_format_list_bulleted" />
+        <ImageButton
+            android:id="@+id/link"
+            style="@style/ToolbarButton"
+            android:src="@drawable/ic_action_insert_link" />
+
+        <ImageButton
+            android:id="@+id/indent_increase"
+            style="@style/ToolbarButton"
+            android:src="@drawable/ic_action_format_indent_increase" />
+
+    </euphoria.psycho.notepad.ui.BottomBar>
+
     <Toolbar
 
         android:id="@+id/toolbar"
@@ -23,7 +52,8 @@
         android:layout_alignTop="@+id/edit_text"
         android:layout_alignParentBottom="true"
         android:background="#fefefe"
-        android:elevation="2dp"></Toolbar>
+        android:elevation="2dp"
+        android:visibility="gone"></Toolbar>
 
 
 </LinearLayout>

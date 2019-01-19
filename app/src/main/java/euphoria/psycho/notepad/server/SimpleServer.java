@@ -228,10 +228,10 @@ public class SimpleServer {
     }
 
 
-
     private void jsonGet(Socket socket, String url) {
         // Log.d(TAG, "[jsonGet] ---> ");
         try {
+            
 
             long hash = Utils.safeParseLong(Utils.substringAfterLast(url, '/'));
             if (hash == -1) {
@@ -249,6 +249,35 @@ public class SimpleServer {
             Gson gson = new Gson();
 
             socket.getOutputStream().write(Utils.getBytes(gson.toJson(note, Note.class)));
+
+
+        } catch (Exception e) {
+
+        } finally {
+            closeQuietly(socket);
+        }
+    }
+
+    private void jsonMarkdown(Socket socket, String url) {
+        // Log.d(TAG, "[jsonGet] ---> ");
+        try {
+
+            long hash = Utils.safeParseLong(Utils.substringAfterLast(url, '/'));
+            if (hash == -1) {
+                send(socket, STATUS_CODE_BAD_REQUEST);
+                return;
+            }
+
+            Note note = DatabaseHelper.getInstance(AndroidContext.instance().get()).fetchNote(hash);
+            if (note == null) {
+                notFound(socket);
+                return;
+            }
+
+            List<String> headers = generateGenericHeader("application/octet-stream", "no-cache");
+            writeHeaders(socket, STATUS_CODE_OK, headers);
+
+            socket.getOutputStream().write(Utils.getBytes(note.Content));
 
 
         } catch (Exception e) {
@@ -312,7 +341,7 @@ public class SimpleServer {
         }
     }
 
-    private void markdown(Socket socket) throws UnsupportedEncodingException {
+    private void markdown(Socket socket) {
         List<Note> titles = DatabaseHelper.getInstance(AndroidContext.instance().get()).fetchTitles();
         StringBuilder sb = new StringBuilder();
         for (Note note : titles) {
@@ -333,6 +362,7 @@ public class SimpleServer {
         }
 
     }
+
 
     private Position nextLine(byte[] data, byte[] boundary, int offset) {
         int length = data.length;
@@ -415,6 +445,9 @@ public class SimpleServer {
                 jsonUpdate(socket, is, status[1]);
                 return;
 
+            } else if (u[1].startsWith("api/download/")) {
+                jsonMarkdown(socket, u[1]);
+                return;
             } else {
                 notFound(socket);
             }

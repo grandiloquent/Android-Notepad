@@ -22,6 +22,7 @@
             });
             this.mde.codemirror.addKeyMap({
                 "F1": () => this.onUpdate(),
+                "F2": () => this.onDownload(),
                 "Ctrl-1": () => this.onSort(),
                 "Esc": () => {
                     window.location.hash = "";
@@ -61,6 +62,24 @@
             .then(response => response.text())
             .then(data => {
                 console.log(data);
+            });
+    }
+    Editor.prototype.onDownload = function () {
+        var hash = window.location.hash;
+        if (hash.length > 0)
+            hash = hash.substring(1);
+        fetch("/api/download/" + hash, {
+                method: 'GET'
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = hash + ".md";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
             });
     }
     Editor.prototype.collect = function () {

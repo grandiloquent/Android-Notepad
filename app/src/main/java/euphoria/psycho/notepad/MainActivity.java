@@ -150,7 +150,7 @@ public class MainActivity extends Activity {
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
         menu.add(0, CONTEXT_MENU_EDIT_NOTE, 0, "编辑笔记");
-        menu.add(0, CONTEXT_MENU_DELETE_NOTE, 0, "删除笔记");
+        //menu.add(0, CONTEXT_MENU_DELETE_NOTE, 0, "删除笔记");
 
         super.onCreateContextMenu(menu, v, menuInfo);
     }

@@ -8,6 +8,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Toolbar;
 
 import org.javia.arity.Symbols;
@@ -43,26 +44,17 @@ public class EditNoteActivity extends Activity {
     private boolean mFinished = false;
     private Note mNote;
     private Symbols mSymbols;
-    private Toolbar mToolbar;
     private boolean mUpdated = false;
+
+    ImageButton mBold;
+    ImageButton mHead;
+    ImageButton mList;
+    ImageButton mLink;
+    ImageButton mIndentIncrease;
+
 
     private void actionBracket() {
         insert("()");
-    }
-
-    private void insert(String str) {
-        CharSequence text = mEditText.getText();
-        if (isNullOrWhiteSpace(text)) {
-            mEditText.setText(str);
-            mEditText.setSelection(1);
-            return;
-        }
-        int start = mEditText.getSelectionStart();
-
-        String s = text.subSequence(0, start) + str + text.subSequence(start, text.length());
-        mEditText.setText(s);
-        mEditText.setSelection(start + 1);
-
     }
 
     private void actionCode() {
@@ -142,7 +134,6 @@ public class EditNoteActivity extends Activity {
         insert("*");
     }
 
-
     private void calculateExpression() {
         if (mSymbols == null) {
             mSymbols = new Symbols();
@@ -172,6 +163,21 @@ public class EditNoteActivity extends Activity {
         }
         stringBuilder.append("相加总结果：").append(addAll).append("\n\n\n");
         mEditText.setText(stringBuilder.toString());
+    }
+
+    private void insert(String str) {
+        CharSequence text = mEditText.getText();
+        if (isNullOrWhiteSpace(text)) {
+            mEditText.setText(str);
+            mEditText.setSelection(1);
+            return;
+        }
+        int start = mEditText.getSelectionStart();
+
+        String s = text.subSequence(0, start) + str + text.subSequence(start, text.length());
+        mEditText.setText(s);
+        mEditText.setSelection(start + 1);
+
     }
 
     private void replaceString(int type) {
@@ -209,39 +215,6 @@ public class EditNoteActivity extends Activity {
         mEditText.setSelection(si);
     }
 
-    private void setupToolbar() {
-        mToolbar.inflateMenu(R.menu.bottom);
-        mToolbar.setOnMenuItemClickListener(item -> {
-            switch (item.getItemId()) {
-                case R.id.action_star: {
-                    actionStar();
-                    return true;
-                }
-
-                case R.id.action_code: {
-                    actionCode();
-                    return true;
-                }
-
-                case R.id.action_head: {
-                    actionHead();
-                    return true;
-                }
-
-                case R.id.action_link: {
-                    actionLink();
-                    return true;
-                }
-
-                case R.id.action_bracket: {
-                    actionBracket();
-                    return true;
-                }
-
-            }
-            return false;
-        });
-    }
 
     private void updateNote() {
         String content = mEditText.getText().toString();
@@ -336,7 +309,6 @@ public class EditNoteActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
         mEditText = findViewById(R.id.edit_text);
-        mToolbar = findViewById(R.id.toolbar);
 
         Intent intent = getIntent();
 
@@ -349,7 +321,26 @@ public class EditNoteActivity extends Activity {
             mEditText.setText(mNote.Content);
 
         }
-        setupToolbar();
+        mEditText = findViewById(R.id.edit_text);
+        mBold = findViewById(R.id.bold);
+        mHead = findViewById(R.id.head);
+        mList = findViewById(R.id.list);
+        mLink = findViewById(R.id.link);
+        mIndentIncrease = findViewById(R.id.indent_increase);
+
+        mBold.setOnClickListener(v -> actionBold());
+        mHead.setOnClickListener(v -> actionHead());
+        mLink.setOnClickListener(v -> actionLink());
+        mList.setOnClickListener(v -> actionStar());
+        mIndentIncrease.setOnClickListener(v -> actionIndent());
+    }
+
+    private void actionIndent() {
+        insert("\t\t");
+    }
+
+    private void actionBold() {
+        insert("****");
     }
 
     @Override
