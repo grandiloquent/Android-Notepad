@@ -7,4 +7,4 @@
 /captures
 /download
 .externalNativeBuild
-node_modules
+*/node_modules
