@@ -7,6 +7,8 @@ import android.view.inputmethod.InputMethod;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 
+import java.util.Random;
+
 public class C {
     public static boolean isNullOrWhiteSpace(CharSequence text) {
         if (text == null || text.length() == 0) return true;
@@ -14,6 +16,29 @@ public class C {
             if (!Character.isWhitespace(text.charAt(i))) return false;
         }
         return true;
+    }
+
+    public static String trimEnd(String s) {
+        int len = s.length();
+        if (len == 0) return s;
+
+        while (s.charAt(len - 1) <= ' ') {
+            len--;
+        }
+        return len < s.length() ? s.substring(0, len) : s;
+    }
+
+    public static String randomString() {
+        StringBuilder sb = new StringBuilder();
+        int max = 10;
+        Random random = new Random();
+        while (max-- > 0) {
+            for (int i = 0; i < random.nextInt(20); i++) {
+                sb.append(i);
+            }
+            sb.append('\n');
+        }
+        return sb.toString();
     }
 
     public static void showSoftInput(Context context) {

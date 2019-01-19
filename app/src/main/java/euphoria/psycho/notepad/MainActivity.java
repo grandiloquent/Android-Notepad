@@ -12,6 +12,7 @@ import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
 
+import euphoria.psycho.notepad.server.DatabaseHelper;
 import euphoria.psycho.notepad.server.ServerActivity;
 
 public class MainActivity extends Activity {
@@ -33,7 +34,7 @@ public class MainActivity extends Activity {
     }
 
     private void deleteNote(Note note) {
-        Databases.getInstance().deleteNote(note);
+        DatabaseHelper.getInstance(AndroidContext.instance().get()).deleteNote(note);
         refreshListView();
     }
 
@@ -49,7 +50,7 @@ public class MainActivity extends Activity {
 
         mListView = findViewById(R.id.list_view);
         registerForContextMenu(mListView);
-        mNoteAdapter = new NoteAdapter(Databases.getInstance().fetchTitles(), this);
+        mNoteAdapter = new NoteAdapter(DatabaseHelper.getInstance(AndroidContext.instance().get()).fetchTitles(), this);
 
         mListView.setAdapter(mNoteAdapter);
 
@@ -71,9 +72,9 @@ public class MainActivity extends Activity {
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 if (charSequence != null && charSequence.toString().trim().length() > 0) {
-                    mNoteAdapter.switchData(Databases.getInstance().searchTitle(charSequence.toString().trim()));
+                    mNoteAdapter.switchData(DatabaseHelper.getInstance(AndroidContext.instance().get()).searchTitle(charSequence.toString().trim()));
                 } else {
-                    mNoteAdapter.switchData(Databases.getInstance().fetchTitles());
+                    mNoteAdapter.switchData(DatabaseHelper.getInstance(AndroidContext.instance().get()).fetchTitles());
                 }
             }
         });
@@ -82,7 +83,7 @@ public class MainActivity extends Activity {
             public boolean onKey(View view, int i, KeyEvent keyEvent) {
                 if (i == KeyEvent.KEYCODE_ENTER && mEditText.getText().toString().trim().length() > 0) {
 
-                    mNoteAdapter.switchData(Databases.getInstance().searchTitles(mEditText.getText().toString().trim()));
+                    mNoteAdapter.switchData(DatabaseHelper.getInstance(AndroidContext.instance().get()).searchTitles(mEditText.getText().toString().trim()));
 
                     return true;
                 }
@@ -93,7 +94,7 @@ public class MainActivity extends Activity {
 
     private void refreshListView() {
 
-        mNoteAdapter.switchData(Databases.getInstance().fetchTitles());
+        mNoteAdapter.switchData(DatabaseHelper.getInstance(AndroidContext.instance().get()).fetchTitles());
     }
 
     private void startServer() {

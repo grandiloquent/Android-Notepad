@@ -3,6 +3,7 @@ package euphoria.psycho.notepad;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -22,13 +23,13 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import euphoria.psycho.notepad.server.DatabaseHelper;
+
 import static euphoria.psycho.notepad.C.isNullOrWhiteSpace;
-import static euphoria.psycho.notepad.C.showSoftInput;
 import static euphoria.psycho.notepad.Constants.EXTRA_ID;
 
 
 public class EditNoteActivity extends Activity {
-
     private static final int MENU_CALCULATE = 0x3;
     private static final int MENU_FORMAT = 0x2;
     private static final int MENU_S_ASTERISK = 0x11;
@@ -39,19 +40,21 @@ public class EditNoteActivity extends Activity {
     private static final int MENU_S_SORT_BY = 0x7;
     private static final int MENU_S_SORT_BY_YEAR = 0x8;
     private static final int MENU_S_SUBTRACTION = 0x8;
+    private static final String TAG = "TAG/" + EditNoteActivity.class.getCanonicalName();
+    ImageButton mBold;
     private EditText mEditText;
-
     private boolean mFinished = false;
+    ImageButton mHead;
+    ImageButton mIndentIncrease;
+    ImageButton mLink;
+    ImageButton mList;
     private Note mNote;
     private Symbols mSymbols;
     private boolean mUpdated = false;
 
-    ImageButton mBold;
-    ImageButton mHead;
-    ImageButton mList;
-    ImageButton mLink;
-    ImageButton mIndentIncrease;
-
+    private void actionBold() {
+        insert("****");
+    }
 
     private void actionBracket() {
         insert("()");
@@ -87,6 +90,10 @@ public class EditNoteActivity extends Activity {
         String s = text.subSequence(0, start) + addString + text.subSequence(start, text.length());
         mEditText.setText(s);
         mEditText.setSelection(oStart + addString.length());
+    }
+
+    private void actionIndent() {
+        insertBlock("\t\t");
     }
 
     private void actionLink() {
@@ -131,7 +138,7 @@ public class EditNoteActivity extends Activity {
     }
 
     private void actionStar() {
-        insert("*");
+        insertBlock("* ");
     }
 
     private void calculateExpression() {
@@ -180,6 +187,44 @@ public class EditNoteActivity extends Activity {
 
     }
 
+    private void insertBlock(String str) {
+        CharSequence text = mEditText.getText();
+        if (isNullOrWhiteSpace(text)) {
+            mEditText.setText(str);
+            mEditText.setSelection(1);
+            return;
+        }
+        int start = mEditText.getSelectionStart();
+        int end = mEditText.getSelectionEnd();
+        while (start - 1 > -1) {
+            start--;
+            if (text.charAt(start) == '\n') {
+                start++;
+                break;
+            }
+
+        }
+        int length = text.length();
+        while (end + 1 < length) {
+            if (text.charAt(end) == '\n') {
+                end++;
+                break;
+            }
+            end++;
+
+        }
+        String r = text.subSequence(start, end).toString();
+        String[] lines = r.split("\n");
+        StringBuilder sb = new StringBuilder();
+        for (String l : lines) {
+            sb.append(str).append(C.trimEnd(l)).append('\n');
+        }
+
+        String s = text.subSequence(0, start) + sb.toString() + text.subSequence(end, text.length());
+        mEditText.setText(s);
+        mEditText.setSelection(start);
+    }
+
     private void replaceString(int type) {
         int si = mEditText.getSelectionStart();
         int ei = mEditText.getSelectionEnd();
@@ -215,20 +260,20 @@ public class EditNoteActivity extends Activity {
         mEditText.setSelection(si);
     }
 
-
     private void updateNote() {
         String content = mEditText.getText().toString();
-        if (content == null || content.trim().length() == 0) return;
+        if (content.trim().length() == 0) return;
         if (mNote == null) {
             mNote = new Note();
 
             mNote.Title = content.split("\n")[0].trim();
             mNote.Content = content.trim();
-            Databases.getInstance().insert(mNote);
+            DatabaseHelper.getInstance(AndroidContext.instance().get()).insert(mNote);
+
         } else {
             mNote.Title = content.split("\n")[0].trim();
             mNote.Content = content.trim();
-            Databases.getInstance().update(mNote);
+            DatabaseHelper.getInstance(AndroidContext.instance().get()).update(mNote);
         }
         mUpdated = true;
     }
@@ -244,7 +289,6 @@ public class EditNoteActivity extends Activity {
 
         return null;
     }
-
 
     public static <T> String joining(List<T> list, String separator) {
         StringBuilder builder = new StringBuilder();
@@ -315,7 +359,7 @@ public class EditNoteActivity extends Activity {
         long id = intent.getLongExtra(EXTRA_ID, 0);
 
         if (id != 0) {
-            mNote = Databases.getInstance().fetchNote(id);
+            mNote =DatabaseHelper.getInstance(AndroidContext.instance().get()).fetchNote(id);
             mNote.ID = id;
 
             mEditText.setText(mNote.Content);
@@ -333,14 +377,8 @@ public class EditNoteActivity extends Activity {
         mLink.setOnClickListener(v -> actionLink());
         mList.setOnClickListener(v -> actionStar());
         mIndentIncrease.setOnClickListener(v -> actionIndent());
-    }
 
-    private void actionIndent() {
-        insert("\t\t");
-    }
-
-    private void actionBold() {
-        insert("****");
+        mEditText.setText(C.randomString());
     }
 
     @Override
