@@ -231,7 +231,7 @@ public class SimpleServer {
     private void jsonGet(Socket socket, String url) {
         // Log.d(TAG, "[jsonGet] ---> ");
         try {
-            
+
 
             long hash = Utils.safeParseLong(Utils.substringAfterLast(url, '/'));
             if (hash == -1) {
