@@ -45,11 +45,8 @@
                 array.push(`${"\t".repeat(count(element))} * [${url}](#${gfm(url) })`);
             }
         }
-        console.log(array.join("\n"));
+        return array.join("\n");
     }
 
-    document.querySelector('.ok').addEventListener('click', function () {
-        var textarea = document.getElementById("textarea");
-        title(textarea.value);
-    })
+    window["BuildTitle"] = title;
 })();

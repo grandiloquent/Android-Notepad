@@ -9,6 +9,9 @@
     <link rel="stylesheet" href="reset.css">
     <link rel="stylesheet" href="layout.css">
     <link rel="stylesheet" href="toast.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/simplemde/1.11.2/simplemde.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/simplemde/1.11.2/simplemde.min.js"></script>
 
 </head>
 
@@ -25,14 +28,22 @@
                 </div>
             </header>
             <nav class="panel__content">
-
+                <div class="container _nav">
+                    <menu class="nav-tree">
+                        <ul class="nav-tree__list">
+                            <li class="nav-tree__item">
+                                <a class="nav-tree__link" href="123">asdasdasd</a>
+                            </li>
+                        </ul>
+                    </menu>
+                </div>
             </nav>
         </section>
         <main class="panel _main _without-sideblock">
             <header class="panel__header header _fixed _clamped">
                 <div class="container header__container">
                     <div class="header__title">
-                        <h3>IntelliJ Platform SDK DevGuide</h3>
+                        <h3 id="title"></h3>
                         <div class="panel-trigger"></div>
                     </div>
                     <div class="header__controls"></div>
@@ -41,12 +52,11 @@
             </header>
             <div class="panel__header header _emulator" style="height: 22px;"></div>
             <section class="panel__content">
-                <textarea id="textarea"></textarea>
-                <button class="ok">确定</button>
+                <textarea id="edit-text"></textarea>
             </section>
         </main>
     </div>
-    <div class="toast__layout">
+    <div class="toast__layout toast--hidden">
         <div class="toast__container">
             <div class="toast__cell">
 
@@ -81,6 +91,7 @@
 
     <script src="app.js"></script>
     <script src="toast.js"></script>
+    <script src="editor.js"></script>
 </body>
 
 </html>

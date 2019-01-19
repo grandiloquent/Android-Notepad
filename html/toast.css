@@ -13,6 +13,10 @@
 
 .toast--hidden {
     visibility: hidden;
+}
+
+.toast--hidden .toast__container {
+    visibility: hidden;
     opacity: 0;
     transition: visibility 0s linear 0.33s, opacity 0.33s linear;
 }

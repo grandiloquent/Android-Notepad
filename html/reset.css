@@ -136,3 +136,20 @@ h3 {
     font-size: 14px;
     line-height: 22px;
 }
+
+ol,
+ul {
+    list-style: none;
+}
+
+.link,
+a {
+    cursor: pointer;
+    text-decoration: none;
+    color: #18a3fa;
+}
+
+.link:visited,
+a:visited {
+    color: #bb68b2;
+}

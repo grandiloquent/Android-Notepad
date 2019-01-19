@@ -10,9 +10,28 @@
         if (!this.element.classList.contains(this.Constants.Hidden))
             this.element.classList.add(this.Constants.Hidden);
     }
+    Toast.prototype.onShow = function (title, message) {
+        if (!this.title) {
+            this.title = this.element.querySelector(this.Constants.Title);
+        }
+        if (title && this.title)
+            this.title.innerText = title;
+        if (!this.message) {
+            this.message = this.element.querySelector(this.Constants.Message);
+        }
+        if (message && this.message) {
+            this.message.innerText = message;
+        }
+        if (this.element.classList.contains(this.Constants.Hidden))
+            this.element.classList.remove(this.Constants.Hidden);
+        this.hide();
+
+    }
     Toast.prototype.Constants = {
         Hidden: "toast--hidden",
         Close: ".toast__close",
+        Title: ".toast__type",
+        Message: ".toast__message",
         HiddenDelay: 5000
     }
 
@@ -22,10 +41,12 @@
         if (this.close) {
             this.close.addEventListener('click', () => {});
         }
+        this.hide();
 
-        setTimeout(() => this.onHidden(), this.Constants.HiddenDelay);
     }
-    window['Toast'] = Toast;
+    Toast.prototype.hide = function () {
+        setTimeout(() => this.onHidden(), this.Constants.HiddenDelay);
 
-    new Toast(document.querySelector('.toast__container'));
+    }
+    window['Toast'] = new Toast(document.querySelector('.toast__layout'));
 })()

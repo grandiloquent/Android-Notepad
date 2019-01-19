@@ -72,14 +72,18 @@ body>section {
     height: 100%;
 }
 
-.icon._search, .search-box__label:before {
+.icon._search,
+.search-box__label:before {
     background-image: url(data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3….5%203.525%203.351%203.525s3.351-1.578%203.351-3.525z%22%2F%3E%3C%2Fsvg%3E);
     background-size: 100% auto;
 }
-.search-box__clear::before, .search-box__label::before {
+
+.search-box__clear::before,
+.search-box__label::before {
     content: '';
     position: absolute;
 }
+
 .search-box__label::before {
     top: 10px;
     left: 2px;
@@ -102,7 +106,9 @@ body>section {
     line-height: 14px;
     outline: 0;
     vertical-align: top;
-}.search-box__clear {
+}
+
+.search-box__clear {
     position: absolute;
     top: 0;
     right: 0;
@@ -114,11 +120,14 @@ body>section {
     -webkit-transition: .4s;
     transition: .4s;
 }
+
 .panel__content {
     position: relative;
     font-size: 16px;
     line-height: 28px;
-}.panel._nav .panel__content {
+}
+
+.panel._nav .panel__content {
     overflow: auto;
     display: -webkit-box;
     display: -webkit-flex;
@@ -132,6 +141,49 @@ body>section {
     padding-top: 15px;
     height: 100%;
 }
+
+.panel._nav .container._nav {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1 0 0;
+    -ms-flex: 1 0 0;
+    flex: 1 0 0;
+    margin-bottom: -95px;
+    padding-bottom: 120px;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+.nav-tree {
+    padding: 0 0 0 4px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 17px;
+}
+
+.nav-tree__list {
+    padding: 0 0 0 10px;
+}
+
+.nav-tree__item {
+    position: relative;
+    font-weight: 300;
+}
+.nav-tree__branch-title, .nav-tree__link, .nav-tree__link:visited, .nav-tree__placeholder, .nav-tree__placeholder:visited {
+    display: block;
+    padding: 7px 10px 7px 0;
+    color: #696969;
+    line-height: 15px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+}
+.nav-tree__item._hover>.nav-tree__link, .nav-tree__item._hover>.nav-tree__placeholder, .nav-tree__link:hover, .nav-tree__placeholder:hover {
+    margin-left: -20px;
+    padding-left: 20px;
+    color: #18a3fa;
+    text-decoration: underline;
+}
+
 .panel._main {
     position: absolute;
     top: 0;
@@ -164,7 +216,7 @@ body>section {
 }
 
 .panel._main .panel__header {
-    margin: 0 0 58px;
+    /* margin: 0 0 58px; */
     padding: 15px 0 10px;
     background: rgba(255, 255, 255, .95);
     border-bottom: 1px solid #dadada;
