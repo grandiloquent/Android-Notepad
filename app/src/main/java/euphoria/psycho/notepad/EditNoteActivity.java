@@ -378,7 +378,7 @@ public class EditNoteActivity extends Activity {
         mList.setOnClickListener(v -> actionStar());
         mIndentIncrease.setOnClickListener(v -> actionIndent());
 
-        mEditText.setText(C.randomString());
+
     }
 
     @Override

@@ -9,6 +9,7 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.Environment;
 import android.os.IBinder;
+import android.util.Log;
 
 import java.io.File;
 
@@ -69,8 +70,12 @@ public class ServerService extends Service {
         mSimpleServer = new SimpleServer.Builder(getDeviceIP(this), PORT)
                 .setStaticDirectory(cacheDirectory.getAbsolutePath())
                 .build();
+        if (mSimpleServer != null)
+            Log.e(TAG, mSimpleServer.getURL());
 
     }
+
+    private static final String TAG = "TAG/" + ServerService.class.getCanonicalName();
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {

@@ -158,6 +158,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             database.update(TABLE_NAME, values, "_id=?", new String[]{Long.toString(note.ID)});
             database.setTransactionSuccessful();
         } catch (Exception e) {
+
         } finally {
             database.endTransaction();
 

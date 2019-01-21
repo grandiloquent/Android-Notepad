@@ -1,5 +1,7 @@
 package euphoria.psycho.notepad.server;
 
+import android.util.Log;
+
 import com.google.gson.Gson;
 
 import java.io.BufferedInputStream;
@@ -12,7 +14,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -105,8 +109,14 @@ public class SimpleServer {
         InetAddress address = InetAddress.getByName(builder.mHost);
         byte[] bytes = address.getAddress();
 
-        mServerSocket = new ServerSocket(mPort, 0, InetAddress.getByAddress(bytes));
+        mServerSocket = new ServerSocket();//mPort, 0, InetAddress.getByAddress(bytes)
         mServerSocket.setSoTimeout(MILLIS_PER_SECOND * 20);
+        mServerSocket.setReuseAddress(true);
+        while (!available(mPort)) {
+            mPort++;
+        }
+        mServerSocket.bind(new InetSocketAddress(InetAddress.getByAddress(bytes), mPort));
+
         mPort = mServerSocket.getLocalPort();
         mURL = "http://" + mServerSocket.getInetAddress().getHostAddress() + ":" + mPort;
 
@@ -227,6 +237,36 @@ public class SimpleServer {
         return mURL;
     }
 
+    public static boolean available(int port) {
+//        if (port < MIN_PORT_NUMBER || port > MAX_PORT_NUMBER) {
+//            throw new IllegalArgumentException("Invalid start port: " + port);
+//        }
+
+        ServerSocket ss = null;
+        DatagramSocket ds = null;
+        try {
+            ss = new ServerSocket(port);
+            ss.setReuseAddress(true);
+            ds = new DatagramSocket(port);
+            ds.setReuseAddress(true);
+            return true;
+        } catch (IOException e) {
+        } finally {
+            if (ds != null) {
+                ds.close();
+            }
+
+            if (ss != null) {
+                try {
+                    ss.close();
+                } catch (IOException e) {
+                    /* should not be thrown */
+                }
+            }
+        }
+
+        return false;
+    }
 
     private void jsonGet(Socket socket, String url) {
         // Log.d(TAG, "[jsonGet] ---> ");
@@ -335,7 +375,7 @@ public class SimpleServer {
 
 
         } catch (Exception e) {
-            // Log.e(TAG, "[jsonUpdate] ---> ", e);
+            Log.e(TAG, "[jsonUpdate] ---> ", e);
         } finally {
             closeQuietly(socket);
         }
@@ -628,7 +668,6 @@ public class SimpleServer {
 
                 try {
                     Socket socket = mServerSocket.accept();
-
                     mExecutorService.submit(() -> processRequest(socket));
 
                 } catch (SocketTimeoutException ignore) {
@@ -690,6 +729,7 @@ public class SimpleServer {
             try {
                 return new SimpleServer(this);
             } catch (IOException e) {
+                // java.net.BindException: bind failed: EADDRINUSE (Address already in use)
                 return null;
             }
         }
