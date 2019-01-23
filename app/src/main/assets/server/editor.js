@@ -10,7 +10,14 @@
     };
     Editor.prototype.Constants = {
         address: "",
+        Title: "title"
     };
+    Editor.prototype.updateTitle = function (s) {
+        if (!this.title) {
+            this.title = document.getElementById(this.Constants.Title);
+        }
+        this.title.innerText = s;
+    }
     Editor.prototype.init = function () {
         if (this.element) {
             // https://github.com/sparksuite/simplemde-markdown-editor
@@ -20,12 +27,20 @@
                 spellChecker: false
 
             });
+            this.title = document.getElementById("title");
+            this.title.innerText = "新文档";
             this.mde.codemirror.addKeyMap({
                 "F1": () => this.onUpdate(),
                 "F2": () => this.onDownload(),
                 "Ctrl-1": () => this.onSort(),
+                "Ctrl-2": () => {
+                    this.mde.value(BuildTitle(this.mde.value()) + this.mde.value());
+                    Toast.onShow("成功");
+                },
                 "Esc": () => {
                     window.location.hash = "";
+                    this.mde.value("");
+                    this.title.innerText = "新文档";
                 }
             })
 
@@ -59,9 +74,19 @@
                 },
                 body: JSON.stringify(obj)
             })
-            .then(response => response.text())
+            .then(response => {
+                if (response.status == 404)
+                    throw new Error("Not Found");
+                return response.json();
+            })
             .then(data => {
-                console.log(data);
+                this.title.innerText = obj['title'];
+                Toast.onShow("成功", "成功更新文档");
+                if (data['id'])
+                    window.location.hash = data['id'];
+            }).catch((e) => {
+
+                Toast.onShow("错误", e + ' ');
             });
     }
     Editor.prototype.onDownload = function () {
@@ -99,7 +124,6 @@
         }
         obj['title'] = title;
         obj['content'] = value;
-        console.log(obj);
         return obj;
     }
     Editor.prototype.onFetch = function (hash) {
@@ -113,6 +137,7 @@
             .then(data => {
 
                 let value = data['content'];
+                this.title.innerText = data['title'];
                 this.mde.value(value);
             });
     }
