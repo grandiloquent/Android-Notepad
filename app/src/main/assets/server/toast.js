@@ -32,7 +32,7 @@
         Close: ".toast__close",
         Title: ".toast__type",
         Message: ".toast__message",
-        HiddenDelay: 5000
+        HiddenDelay: 1000
     }
 
     Toast.prototype.init = function () {

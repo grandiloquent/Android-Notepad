@@ -368,7 +368,11 @@ public class SimpleServer {
                 DatabaseHelper.getInstance(AndroidContext.instance().get()).update(note);
             else
                 DatabaseHelper.getInstance(AndroidContext.instance().get()).insert(note);
-            send(socket, STATUS_CODE_OK);
+
+            writeHeaders(socket, STATUS_CODE_OK,generateGenericHeader("application/json","no-cache"));
+
+            String js=gson.toJson(note);
+            socket.getOutputStream().write(gson.toJson(note).getBytes(UTF_8));
 
 
         } catch (Exception e) {
