@@ -7,6 +7,7 @@
 #include <android/asset_manager_jni.h>
 #include "defines.h"
 #include "strbuf.h"
+#include "cJSON.h"
 
 static struct mg_serve_http_opts s_http_server_opts;
 static sqlite3 *s_db;

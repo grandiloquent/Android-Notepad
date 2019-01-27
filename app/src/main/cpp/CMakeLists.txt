@@ -14,7 +14,8 @@ add_library(libmongoose SHARED
 
 add_library(main SHARED
         main.c
-        strbuf.c)
+        strbuf.c
+        cJSON.c)
 
 target_include_directories(main PRIVATE
         ${distribution_DIR}/libsqlite
