@@ -5,5 +5,7 @@ public class NativeMethods {
         System.loadLibrary("main");
     }
 
-    public  static native void createDatabase(String fileName);
+    public static native String startServer(String fileName, String staticDirectory);
+
+
 }

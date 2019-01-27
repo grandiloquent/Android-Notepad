@@ -209,7 +209,8 @@ public class ServerActivity extends BaseActivity {
 //                    }
 //                });
 
-        NativeMethods.createDatabase(new File(Environment.getExternalStorageDirectory(), "notes2.db").getAbsolutePath());
+        NativeMethods.startServer(new File(Environment.getExternalStorageDirectory(), "notes_notepad.db").getAbsolutePath(),
+                new File(Environment.getExternalStorageDirectory(), "server").getAbsolutePath());
     }
 
     @Override

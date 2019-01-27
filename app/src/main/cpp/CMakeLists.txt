@@ -13,7 +13,8 @@ add_library(libmongoose SHARED
         ${distribution_DIR}/libmongoose/mongoose.c)
 
 add_library(main SHARED
-        main.c)
+        main.c
+        strbuf.c)
 
 target_include_directories(main PRIVATE
         ${distribution_DIR}/libsqlite
