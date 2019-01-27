@@ -13,8 +13,30 @@ static struct mg_serve_http_opts s_http_server_opts;
 static sqlite3 *s_db;
 
 
-sqlite3 *CreateDatabase(const char *fileName) {
+sqlite3 *CreateDatabase(const char *fileName);
 
+static void ev_handler(struct mg_connection *nc, int ev, void *ev_data);
+
+void GetAssetFile(JNIEnv *ev, jobject assetManager);
+
+void GetIP(char *device);
+
+static void GetJSON(struct mg_connection *nc, const struct http_message *hm, int id);
+
+void GetPath(JNIEnv *env, char *buf);
+
+static int has_prefix(const struct mg_str *uri, const struct mg_str *prefix);
+
+static void index(struct mg_connection *nc, const struct http_message *hm);
+
+static int is_equal(const struct mg_str *s1, const struct mg_str *s2);
+
+void StartServer(const char *address);
+
+static void UpdateJSON(struct mg_connection *nc, const struct http_message *hm);
+
+
+sqlite3 *CreateDatabase(const char *fileName) {
     sqlite3 *db;
     int rc = sqlite3_open(fileName, &db);
     if (rc) {
@@ -35,46 +57,32 @@ sqlite3 *CreateDatabase(const char *fileName) {
         LOGE("SQL error:%s\n", errMsg);
         sqlite3_free(errMsg);
     }
-
     return db;
-
-
 }
 
+static void ev_handler(struct mg_connection *nc, int ev, void *ev_data) {
+    static const struct mg_str api_index = MG_MK_STR("/");
+    static const struct mg_str api_get = MG_MK_STR("/api/get/");
+    static const struct mg_str api_update = MG_MK_STR("/api/update");
+    struct http_message *hm = (struct http_message *) ev_data;
+    if (ev == MG_EV_HTTP_REQUEST) {
+        if (is_equal(&hm->uri, &api_index)) {
+            index(nc, hm);
+        } else if (has_prefix(&hm->uri, &api_get)) {
+            GetJSON(nc, hm, atoi(hm->uri.p + api_get.len));
+        } else if (is_equal(&hm->uri, &api_update)) {
+            UpdateJSON(nc, hm);
+        } else {
+            mg_serve_http(nc, hm, s_http_server_opts); /* Serve static content */
+        }
+    }
+}
 
 void GetAssetFile(JNIEnv *ev, jobject assetManager) {
     AAssetManager *manager = AAssetManager_fromJava(ev, assetManager);
     if (manager == NULL) {
         return;
     }
-
-
-}
-
-void GetPath(JNIEnv *env, char *buf) {
-    jclass envcls = (*env)->FindClass(env, "android/os/Environment"); //获得类引用
-    if (envcls == NULL) return;
-
-    //找到对应的类，该类是静态的返回值是File
-    jmethodID id = (*env)->GetStaticMethodID(env, envcls, "getExternalStorageDirectory",
-                                             "()Ljava/io/File;");
-
-    //调用上述id获得的方法，返回对象即File file=Enviroment.getExternalStorageDirectory()
-    //其实就是通过Enviroment调用 getExternalStorageDirectory()
-    jobject fileObj = (*env)->CallStaticObjectMethod(env, envcls, id, "");
-
-    //通过上述方法返回的对象创建一个引用即File对象
-    jclass flieClass = (*env)->GetObjectClass(env, fileObj); //或得类引用
-    //在调用File对象的getPath()方法获取该方法的ID，返回值为String 参数为空
-    jmethodID getpathId = (*env)->GetMethodID(env, flieClass, "getPath", "()Ljava/lang/String;");
-    //调用该方法及最终获得存储卡的根目录
-    jstring pathStr = (jstring) (*env)->CallObjectMethod(env, fileObj, getpathId, "");
-
-    char *path = (*env)->GetStringUTFChars(env, pathStr, NULL);
-
-    //CreateDatabase(fileName);
-    strcpy(buf, path);
-    (*env)->ReleaseStringUTFChars(env, pathStr, path);
 }
 
 void GetIP(char *device) {
@@ -92,7 +100,6 @@ void GetIP(char *device) {
     ioctl(sockfd, SIOCGIFCONF, &ifconf); //获取所有接口信息
     //接下来一个一个的获取IP地址
     ifreq = (struct ifreq *) buf;
-
     for (i = (ifconf.ifc_len / sizeof(struct ifreq)); i > 0; i--) {
         // if(ifreq->ifr_flags == AF_INET){ //for ipv4
         char *ip = inet_ntoa(((struct sockaddr_in *) &(ifreq->ifr_addr))->sin_addr);
@@ -105,10 +112,67 @@ void GetIP(char *device) {
     }
 }
 
-static int is_equal(const struct mg_str *s1, const struct mg_str *s2) {
-    return s1->len == s2->len && memcmp(s1->p, s2->p, s2->len) == 0;
+static void GetJSON(struct mg_connection *nc, const struct http_message *hm, int id) {
+    sqlite3_stmt *stmt = NULL;
+    const char *data = NULL;
+    int result = SQLITE_BUSY;
+    const char *sql = "select title,content from note where _id=?";
+    (void) hm;
+    if (sqlite3_prepare_v2(s_db, sql, strlen(sql), &stmt,
+                           NULL) == SQLITE_OK) {
+        sqlite3_bind_int(stmt, 1, id);
+        struct cJSON *json = cJSON_CreateObject();
+        for (int i = 0; i < 10; i++) {
+            result = sqlite3_step(stmt);
+            if (result != SQLITE_BUSY && result != SQLITE_LOCKED) {
+                break;
+            }
+            usleep(200);
+        }
+        if (result == SQLITE_DONE || result == SQLITE_ROW) {
+            data = (char *) sqlite3_column_text(stmt, 0);
+            cJSON_AddItemToObject(json, "title", cJSON_CreateString(data));
+            data = (char *) sqlite3_column_text(stmt, 1);
+            cJSON_AddItemToObject(json, "content", cJSON_CreateString(data));
+        }
+        char *buf = cJSON_Print(json);
+        sqlite3_finalize(stmt);
+        cJSON_Delete(json);
+        //LOGE("%s\n",buf );
+        mg_send_head(nc, 200, strlen(buf),
+                     "Content-Type: application/json; charset=utf-8");
+        mg_send(nc, buf, (int) strlen(buf));
+    } else {
+        mg_printf(nc, "%s",
+                  "HTTP/1.1 500 Server Error\r\n"
+                  "Content-Length: 0\r\n\r\n");
+    }
 }
 
+void GetPath(JNIEnv *env, char *buf) {
+    jclass envcls = (*env)->FindClass(env, "android/os/Environment"); //获得类引用
+    if (envcls == NULL) return;
+    //找到对应的类，该类是静态的返回值是File
+    jmethodID id = (*env)->GetStaticMethodID(env, envcls, "getExternalStorageDirectory",
+                                             "()Ljava/io/File;");
+    //调用上述id获得的方法，返回对象即File file=Enviroment.getExternalStorageDirectory()
+    //其实就是通过Enviroment调用 getExternalStorageDirectory()
+    jobject fileObj = (*env)->CallStaticObjectMethod(env, envcls, id, "");
+    //通过上述方法返回的对象创建一个引用即File对象
+    jclass flieClass = (*env)->GetObjectClass(env, fileObj); //或得类引用
+    //在调用File对象的getPath()方法获取该方法的ID，返回值为String 参数为空
+    jmethodID getpathId = (*env)->GetMethodID(env, flieClass, "getPath", "()Ljava/lang/String;");
+    //调用该方法及最终获得存储卡的根目录
+    jstring pathStr = (jstring) (*env)->CallObjectMethod(env, fileObj, getpathId, "");
+    char *path = (*env)->GetStringUTFChars(env, pathStr, NULL);
+    //CreateDatabase(fileName);
+    strcpy(buf, path);
+    (*env)->ReleaseStringUTFChars(env, pathStr, path);
+}
+
+static int has_prefix(const struct mg_str *uri, const struct mg_str *prefix) {
+    return uri->len > prefix->len && memcmp(uri->p, prefix->p, prefix->len) == 0;
+}
 
 static void index(struct mg_connection *nc, const struct http_message *hm) {
     sqlite3_stmt *stmt = NULL;
@@ -117,10 +181,7 @@ static void index(struct mg_connection *nc, const struct http_message *hm) {
     (void) hm;
     if (sqlite3_prepare_v2(s_db, "select _id,title from note order by updated_at desc", -1, &stmt,
                            NULL) == SQLITE_OK) {
-
-
         struct strbuf name = STRBUF_INIT;
-
         while (1) {
             result = sqlite3_step(stmt);
             if (result == SQLITE_ROW) {
@@ -128,7 +189,7 @@ static void index(struct mg_connection *nc, const struct http_message *hm) {
                 strbuf_addf(
                         &name,
                         "<li class=\"nav-tree__item\"><a class=\"nav-tree__link\" href=\"#%d\">%s</a></li>",
-                        1, data);
+                        sqlite3_column_int(stmt, 0), data);
             } else {
                 break;
             }
@@ -137,10 +198,9 @@ static void index(struct mg_connection *nc, const struct http_message *hm) {
         mg_send_head(nc, 200, S_INDEX_T1 + S_INDEX_T2 + name.len,
                      "Content-Type: text/html; charset=utf-8");
         mg_send(nc, s_index_t1, S_INDEX_T1);
-        mg_send(nc, name.buf, name.len);
-        mg_send(nc, s_index_t2, S_INDEX_T2);
-
+        mg_send(nc, name.buf, (int) name.len);
         strbuf_release(&name);
+        mg_send(nc, s_index_t2, S_INDEX_T2);
     } else {
         mg_printf(nc, "%s",
                   "HTTP/1.1 500 Server Error\r\n"
@@ -148,36 +208,14 @@ static void index(struct mg_connection *nc, const struct http_message *hm) {
     }
 }
 
-static void ev_handler(struct mg_connection *nc, int ev, void *ev_data) {
-    static const struct mg_str api_index = MG_MK_STR("/");
-
-
-    struct http_message *hm = (struct http_message *) ev_data;
-    if (ev == MG_EV_HTTP_REQUEST) {
-        if (is_equal(&hm->uri, &api_index)) {
-
-            index(nc, hm);
-
-        } else {
-            mg_serve_http(nc, hm, s_http_server_opts); /* Serve static content */
-        }
-    }
-//    else {
-//        mg_printf(nc, "%s",
-//                  "HTTP/1.0 501 Not Implemented\r\n"
-//                  "Content-Length: 0\r\n\r\n");
-//    }
-//    char buf[100];
-//    memcpy(buf, hm->uri.p, hm->uri.len);
-//    LOGE("%d %s", ev, buf);
+static int is_equal(const struct mg_str *s1, const struct mg_str *s2) {
+    return s1->len == s2->len && memcmp(s1->p, s2->p, s2->len) == 0;
 }
-
 
 void StartServer(const char *address) {
     struct mg_mgr mgr;
     struct mg_connection *nc;
     int i;
-
     mg_mgr_init(&mgr, NULL);
     nc = mg_bind(&mgr, address, ev_handler);
     mg_set_protocol_http_websocket(nc);
@@ -185,7 +223,78 @@ void StartServer(const char *address) {
         mg_mgr_poll(&mgr, 1000);
     }
     mg_mgr_free(&mgr);
+}
 
+static void UpdateJSON(struct mg_connection *nc, const struct http_message *hm) {
+    cJSON *json = cJSON_Parse(hm->body.p);
+    cJSON *jsTitle = cJSON_GetObjectItem(json, "title");
+    cJSON *jsId = cJSON_GetObjectItem(json, "id");
+    cJSON *jsContent = cJSON_GetObjectItem(json, "content");
+
+    int id = jsId->valueint;
+    char *title = cJSON_GetStringValue(jsTitle);
+    char *content = cJSON_GetStringValue(jsContent);
+
+
+    cJSON_Delete(json);
+
+    sqlite3_stmt *stmt = NULL;
+    const char *data = NULL;
+    int result = SQLITE_BUSY;
+    const char *sql;
+    if (id > 0) {
+        sql = "Update note Set title=?,content=?,updated_at=? where _id=?";
+
+    } else {
+        //replace(strftime('%Y%m%d%H%M%f', 'now'), '.', '') datetime('now') datetime('now')
+        sql = "INSERT INTO note VALUES(NULL,?,?,?,?)";
+    }
+    (void) hm;
+    if (sqlite3_prepare_v2(s_db, sql, strlen(sql), &stmt,
+                           NULL) == SQLITE_OK) {
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+
+        double time_in_mill =
+                (tv.tv_sec) * 1000 + (tv.tv_usec) / 1000;
+
+        sqlite3_bind_text(stmt, 1, title, strlen(title), SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 2, content, strlen(content), SQLITE_STATIC);
+        if (id > 0) {
+            sqlite3_bind_double(stmt, 3, time_in_mill);
+            sqlite3_bind_int(stmt, 4, id);
+
+        } else {
+            sqlite3_bind_double(stmt, 3, time_in_mill);
+            sqlite3_bind_double(stmt, 4, time_in_mill);
+        }
+
+        struct cJSON *json = cJSON_CreateObject();
+        for (int i = 0; i < 10; i++) {
+            result = sqlite3_step(stmt);
+            if (result != SQLITE_BUSY && result != SQLITE_LOCKED) {
+                break;
+            }
+            usleep(200);
+        }
+        if (result == SQLITE_DONE || result == SQLITE_ROW) {
+
+
+            cJSON_AddItemToObject(json, "title", cJSON_CreateString(title));
+
+        }
+        char *buf = cJSON_Print(json);
+        sqlite3_finalize(stmt);
+        cJSON_Delete(json);
+        //LOGE("%s\n",buf );
+        mg_send_head(nc, 200, strlen(buf),
+                     "Content-Type: application/json; charset=utf-8");
+        mg_send(nc, buf, (int) strlen(buf));
+    } else {
+        mg_printf(nc, "%s",
+                  "HTTP/1.1 500 Server Error\r\n"
+                  "Content-Length: 0\r\n\r\n");
+    }
 }
 
 

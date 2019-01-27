@@ -251,9 +251,9 @@ public class ServerActivity extends BaseActivity {
         if (!targetDirectory.isDirectory()) {
             targetDirectory.mkdir();
         }
-//        else {
-//            return;
-//        }
+        else {
+            return;
+        }
         AssetManager assetManager = getAssets();
         String[] files = null;
         try {
