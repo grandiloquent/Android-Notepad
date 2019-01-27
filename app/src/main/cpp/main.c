@@ -103,7 +103,7 @@ void GetIP(char *device) {
     for (i = (ifconf.ifc_len / sizeof(struct ifreq)); i > 0; i--) {
         // if(ifreq->ifr_flags == AF_INET){ //for ipv4
         char *ip = inet_ntoa(((struct sockaddr_in *) &(ifreq->ifr_addr))->sin_addr);
-        LOGE("ip: %s\n", ip);
+        // LOGE("ip: %s\n", ip);
         if (strncmp(ip, "192.168", 7) == 0)
             strcpy(device, ip);
         // __android_log_print(ANDROID_LOG_INFO, "test", "%s", ip);
@@ -226,20 +226,29 @@ void StartServer(const char *address) {
 }
 
 static void UpdateJSON(struct mg_connection *nc, const struct http_message *hm) {
+    int i;
+
+    for (i = 0; i < MG_MAX_HTTP_HEADERS && hm->header_names[i].len > 0; i++) {
+        struct mg_str hn = hm->header_names[i];
+        struct mg_str hv = hm->header_values[i];
+        LOGE("%s\"%.*s\": \"%.*s\"", (i != 0 ? "," : ""), (int) hn.len,
+             hn.p, (int) hv.len, hv.p);
+    }
+
+
     cJSON *json = cJSON_Parse(hm->body.p);
     cJSON *jsTitle = cJSON_GetObjectItem(json, "title");
     cJSON *jsId = cJSON_GetObjectItem(json, "id");
     cJSON *jsContent = cJSON_GetObjectItem(json, "content");
 
     int id = jsId->valueint;
-    char *title = cJSON_GetStringValue(jsTitle);
-    char *content = cJSON_GetStringValue(jsContent);
+    char *title = jsTitle->valuestring;
+    char *content = jsContent->valuestring;
+    LOGE("the body length: %d %d %d %s\n", strlen(hm->body.p), hm->body.len, strlen(content),
+         hm->body.p);
 
-
-    cJSON_Delete(json);
 
     sqlite3_stmt *stmt = NULL;
-    const char *data = NULL;
     int result = SQLITE_BUSY;
     const char *sql;
     if (id > 0) {
@@ -250,7 +259,7 @@ static void UpdateJSON(struct mg_connection *nc, const struct http_message *hm) 
         sql = "INSERT INTO note VALUES(NULL,?,?,?,?)";
     }
     (void) hm;
-    if (sqlite3_prepare_v2(s_db, sql, strlen(sql), &stmt,
+    if (sqlite3_prepare_v2(s_db, sql, -1, &stmt,
                            NULL) == SQLITE_OK) {
         struct timeval tv;
         gettimeofday(&tv, NULL);
@@ -258,8 +267,8 @@ static void UpdateJSON(struct mg_connection *nc, const struct http_message *hm) 
         double time_in_mill =
                 (tv.tv_sec) * 1000 + (tv.tv_usec) / 1000;
 
-        sqlite3_bind_text(stmt, 1, title, strlen(title), SQLITE_STATIC);
-        sqlite3_bind_text(stmt, 2, content, strlen(content), SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 1, title, -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 2, content, -1, SQLITE_STATIC);
         if (id > 0) {
             sqlite3_bind_double(stmt, 3, time_in_mill);
             sqlite3_bind_int(stmt, 4, id);
@@ -269,7 +278,7 @@ static void UpdateJSON(struct mg_connection *nc, const struct http_message *hm) 
             sqlite3_bind_double(stmt, 4, time_in_mill);
         }
 
-        struct cJSON *json = cJSON_CreateObject();
+        struct cJSON *resJson = cJSON_CreateObject();
         for (int i = 0; i < 10; i++) {
             result = sqlite3_step(stmt);
             if (result != SQLITE_BUSY && result != SQLITE_LOCKED) {
@@ -280,16 +289,19 @@ static void UpdateJSON(struct mg_connection *nc, const struct http_message *hm) 
         if (result == SQLITE_DONE || result == SQLITE_ROW) {
 
 
-            cJSON_AddItemToObject(json, "title", cJSON_CreateString(title));
+            cJSON_AddItemToObject(resJson, "title", cJSON_CreateString(title));
 
         }
-        char *buf = cJSON_Print(json);
+        char *buf = cJSON_Print(resJson);
         sqlite3_finalize(stmt);
+        cJSON_Delete(resJson);
         cJSON_Delete(json);
         //LOGE("%s\n",buf );
         mg_send_head(nc, 200, strlen(buf),
                      "Content-Type: application/json; charset=utf-8");
         mg_send(nc, buf, (int) strlen(buf));
+
+
     } else {
         mg_printf(nc, "%s",
                   "HTTP/1.1 500 Server Error\r\n"
