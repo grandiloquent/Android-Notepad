@@ -2,6 +2,8 @@
 
 ## Embed Simple Web Server
 
-https://www.sqlite.org/
-https://github.com/cesanta/mongoose
+## References
 
+* https://www.sqlite.org/
+* https://github.com/cesanta/mongoose
+* https://github.com/arjun024/strbuf
