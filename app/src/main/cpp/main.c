@@ -11,6 +11,7 @@
 
 static struct mg_serve_http_opts s_http_server_opts;
 static sqlite3 *s_db;
+static char s_device[512];
 
 
 sqlite3 *CreateDatabase(const char *fileName);
@@ -73,6 +74,7 @@ static void ev_handler(struct mg_connection *nc, int ev, void *ev_data) {
         } else if (is_equal(&hm->uri, &api_update)) {
             UpdateJSON(nc, hm);
         } else {
+            LOGE("ev_handler: %s\n", s_http_server_opts.document_root);
             mg_serve_http(nc, hm, s_http_server_opts); /* Serve static content */
         }
     }
@@ -309,6 +311,11 @@ static void UpdateJSON(struct mg_connection *nc, const struct http_message *hm) 
     }
 }
 
+void *start_server(void *ignore) {
+
+    StartServer(s_device);
+    return NULL;
+}
 
 JNIEXPORT jstring JNICALL
 Java_euphoria_psycho_notepad_NativeMethods_startServer(JNIEnv *env, jclass type, jstring fileName_,
@@ -319,16 +326,26 @@ Java_euphoria_psycho_notepad_NativeMethods_startServer(JNIEnv *env, jclass type,
 
     s_db = CreateDatabase(fileName);
 
-    char device[512];
-    GetIP(device);
-    strcat(device, ":8090");
 
-    s_http_server_opts.document_root = staticDirectory;
-    StartServer(device);
+    GetIP(s_device);
+    strcat(s_device, ":8090");
+
+    char *dir = malloc(strlen(staticDirectory) + 1);
+    strcpy(dir, staticDirectory);
+    s_http_server_opts.document_root = dir;
 
 
+    pthread_t t;
+//    char device[512]; //should pass malloc(512)
+//    strcpy(device, "123");
+//    strcat(device, "456");
+//    LOGE("%p %s\n", (void *) device, (char *) device);
+//    //Launch a thread
+//    pthread_create(&t, NULL, start_server, (void *) device);
+
+    pthread_create(&t, NULL, start_server, NULL);
     (*env)->ReleaseStringUTFChars(env, fileName_, fileName);
     (*env)->ReleaseStringUTFChars(env, staticDirectory_, staticDirectory);
 
-    return (*env)->NewStringUTF(env, device);
+    return (*env)->NewStringUTF(env, s_device);
 }

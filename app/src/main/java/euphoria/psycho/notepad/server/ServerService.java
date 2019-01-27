@@ -19,9 +19,11 @@ import static euphoria.psycho.notepad.server.Utils.getDeviceIP;
 
 
 public class ServerService extends Service {
+    public static final boolean DEBUG = true;
     private static final String CHANNEL_ID = "_tag_";
     private static final int FOREGROUND_ID = 1 << 1;
     private static final int PORT = 8090;
+    private static final String TAG = "TAG/" + ServerService.class.getCanonicalName();
     private final IBinder mBinder = new ServerBinder();
     private String mUrl;
 
@@ -41,15 +43,6 @@ public class ServerService extends Service {
         return (b.build());
     }
 
-    public String getURL() {
-        return mUrl;
-    }
-
-    @Override
-    public IBinder onBind(Intent intent) {
-        return mBinder;
-    }
-
     private void createNotificationChannel() {
         // Create the NotificationChannel, but only on API 26+ because
         // the NotificationChannel class is new and not in the support library
@@ -66,13 +59,27 @@ public class ServerService extends Service {
         }
     }
 
+    public String getURL() {
+        return mUrl;
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return mBinder;
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
         createNotificationChannel();
 
+
         mUrl = NativeMethods.startServer(new File(Environment.getExternalStorageDirectory(), "notes_notepad.db").getAbsolutePath(),
                 new File(Environment.getExternalStorageDirectory(), "server").getAbsolutePath());
+
+        if (DEBUG) {
+            Log.d(TAG, "onCreate: " + mUrl);
+        }
 
 
 //        mSimpleServer = new SimpleServer.Builder(getDeviceIP(this), PORT)
@@ -82,8 +89,6 @@ public class ServerService extends Service {
 //            Log.e(TAG, mSimpleServer.getURL());
 
     }
-
-    private static final String TAG = "TAG/" + ServerService.class.getCanonicalName();
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
