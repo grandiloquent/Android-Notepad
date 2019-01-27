@@ -174,43 +174,41 @@ public class ServerActivity extends BaseActivity {
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         copyAssets();
-        //new SimpleServer(deviceIp, directories, this, this);
-//        final View rootView = getWindow().getDecorView().getRootView();
-//        rootView.getViewTreeObserver().addOnGlobalLayoutListener(
-//                new ViewTreeObserver.OnGlobalLayoutListener() {
-//
-//                    @Override
-//                    public void onGlobalLayout() {
-//
-//                        mConnection = new ServiceConnection() {
-//
-//                            @Override
-//                            public void onServiceConnected(ComponentName className,
-//                                                           IBinder service) {
-//                                // We've bound to LocalService, cast the IBinder and get LocalService instance
-//                                ServerService.ServerBinder binder = (ServerService.ServerBinder) service;
-//                                mService = binder.getService();
-//                                mBound = true;
-//
-//                                onStarted(mService.getURL());
-//                            }
-//
-//                            @Override
-//                            public void onServiceDisconnected(ComponentName arg0) {
-//                                mBound = false;
-//                            }
-//                        };
-//                        Intent intent = new Intent(ServerActivity.this, ServerService.class);
-//                        startService(intent);
-//                        if (!mBound)
-//                            //android.app.ServiceConnectionLeaked: Activity euphoria.psycho.funny.activity.ServerActivity has leaked ServiceConnection
-//                            bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
-//
-//                    }
-//                });
+        final View rootView = getWindow().getDecorView().getRootView();
+        rootView.getViewTreeObserver().addOnGlobalLayoutListener(
+                new ViewTreeObserver.OnGlobalLayoutListener() {
 
-        NativeMethods.startServer(new File(Environment.getExternalStorageDirectory(), "notes_notepad.db").getAbsolutePath(),
-                new File(Environment.getExternalStorageDirectory(), "server").getAbsolutePath());
+                    @Override
+                    public void onGlobalLayout() {
+
+                        mConnection = new ServiceConnection() {
+
+                            @Override
+                            public void onServiceConnected(ComponentName className,
+                                                           IBinder service) {
+                                // We've bound to LocalService, cast the IBinder and get LocalService instance
+                                ServerService.ServerBinder binder = (ServerService.ServerBinder) service;
+                                mService = binder.getService();
+                                mBound = true;
+
+                                onStarted(mService.getURL());
+                            }
+
+                            @Override
+                            public void onServiceDisconnected(ComponentName arg0) {
+                                mBound = false;
+                            }
+                        };
+                        Intent intent = new Intent(ServerActivity.this, ServerService.class);
+                        startService(intent);
+                        if (!mBound)
+                            //android.app.ServiceConnectionLeaked: Activity euphoria.psycho.funny.activity.ServerActivity has leaked ServiceConnection
+                            bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+
+                    }
+                });
+
+
     }
 
     @Override

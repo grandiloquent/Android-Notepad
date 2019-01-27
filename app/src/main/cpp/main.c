@@ -226,14 +226,14 @@ void StartServer(const char *address) {
 }
 
 static void UpdateJSON(struct mg_connection *nc, const struct http_message *hm) {
-    int i;
-
-    for (i = 0; i < MG_MAX_HTTP_HEADERS && hm->header_names[i].len > 0; i++) {
-        struct mg_str hn = hm->header_names[i];
-        struct mg_str hv = hm->header_values[i];
-        LOGE("%s\"%.*s\": \"%.*s\"", (i != 0 ? "," : ""), (int) hn.len,
-             hn.p, (int) hv.len, hv.p);
-    }
+//    int i;
+//
+//    for (i = 0; i < MG_MAX_HTTP_HEADERS && hm->header_names[i].len > 0; i++) {
+//        struct mg_str hn = hm->header_names[i];
+//        struct mg_str hv = hm->header_values[i];
+//        LOGE("%s\"%.*s\": \"%.*s\"", (i != 0 ? "," : ""), (int) hn.len,
+//             hn.p, (int) hv.len, hv.p);
+//    }
 
 
     cJSON *json = cJSON_Parse(hm->body.p);
@@ -244,8 +244,8 @@ static void UpdateJSON(struct mg_connection *nc, const struct http_message *hm) 
     int id = jsId->valueint;
     char *title = jsTitle->valuestring;
     char *content = jsContent->valuestring;
-    LOGE("the body length: %d %d %d %s\n", strlen(hm->body.p), hm->body.len, strlen(content),
-         hm->body.p);
+//    LOGE("the body length: %d %d %d %s\n", strlen(hm->body.p), hm->body.len, strlen(content),
+//         hm->body.p);
 
 
     sqlite3_stmt *stmt = NULL;

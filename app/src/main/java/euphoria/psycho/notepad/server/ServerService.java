@@ -13,6 +13,8 @@ import android.util.Log;
 
 import java.io.File;
 
+import euphoria.psycho.notepad.NativeMethods;
+
 import static euphoria.psycho.notepad.server.Utils.getDeviceIP;
 
 
@@ -21,10 +23,15 @@ public class ServerService extends Service {
     private static final int FOREGROUND_ID = 1 << 1;
     private static final int PORT = 8090;
     private final IBinder mBinder = new ServerBinder();
-    private SimpleServer mSimpleServer;
+    private String mUrl;
 
     private Notification buildForegroundNotification() {
-        Notification.Builder b = new Notification.Builder(this, CHANNEL_ID);
+        Notification.Builder b = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            b = new Notification.Builder(this, CHANNEL_ID);
+        } else {
+            b = new Notification.Builder(this);
+        }
 
         b
                 .setContentTitle("视频")
@@ -35,7 +42,7 @@ public class ServerService extends Service {
     }
 
     public String getURL() {
-        return mSimpleServer.getURL();
+        return mUrl;
     }
 
     @Override
@@ -64,14 +71,15 @@ public class ServerService extends Service {
         super.onCreate();
         createNotificationChannel();
 
-        File cacheDirectory = new File(Environment.getExternalStorageDirectory(), ".cache");
+        mUrl = NativeMethods.startServer(new File(Environment.getExternalStorageDirectory(), "notes_notepad.db").getAbsolutePath(),
+                new File(Environment.getExternalStorageDirectory(), "server").getAbsolutePath());
 
 
-        mSimpleServer = new SimpleServer.Builder(getDeviceIP(this), PORT)
-                .setStaticDirectory(cacheDirectory.getAbsolutePath())
-                .build();
-        if (mSimpleServer != null)
-            Log.e(TAG, mSimpleServer.getURL());
+//        mSimpleServer = new SimpleServer.Builder(getDeviceIP(this), PORT)
+//                .setStaticDirectory(cacheDirectory.getAbsolutePath())
+//                .build();
+//        if (mSimpleServer != null)
+//            Log.e(TAG, mSimpleServer.getURL());
 
     }
 
