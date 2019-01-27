@@ -7,12 +7,14 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -29,6 +31,8 @@ import com.google.zxing.common.BitMatrix;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.EnumMap;
@@ -36,20 +40,21 @@ import java.util.Map;
 
 import euphoria.psycho.notepad.AndroidServices;
 import euphoria.psycho.notepad.BaseActivity;
+import euphoria.psycho.notepad.NativeMethods;
 import euphoria.psycho.notepad.R;
 
 
 public class ServerActivity extends BaseActivity {
     private static final int BLACK = 0xFF000000;
-    private static final String TAG = "Funny/ServerActivity";
+    private static final String TAG = "TAG/" + ServerActivity.class.getSimpleName();
     private static final int WHITE = 0xFFFFFFFF;
     private final Handler mHandler = new Handler();
     private TextView mAddress;
     private Bitmap mBitmap;
     boolean mBound = false;
+    private ServiceConnection mConnection;
     private ImageView mQrCodeView;
     ServerService mService;
-    private ServiceConnection mConnection;
     private String mURL;
 
     Bitmap encodeAsBitmap(String contents, BarcodeFormat format, int dimension) throws WriterException {
@@ -168,42 +173,55 @@ public class ServerActivity extends BaseActivity {
         super.initialize();
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
+        copyAssets();
         //new SimpleServer(deviceIp, directories, this, this);
-        final View rootView = getWindow().getDecorView().getRootView();
-        rootView.getViewTreeObserver().addOnGlobalLayoutListener(
-                new ViewTreeObserver.OnGlobalLayoutListener() {
+//        final View rootView = getWindow().getDecorView().getRootView();
+//        rootView.getViewTreeObserver().addOnGlobalLayoutListener(
+//                new ViewTreeObserver.OnGlobalLayoutListener() {
+//
+//                    @Override
+//                    public void onGlobalLayout() {
+//
+//                        mConnection = new ServiceConnection() {
+//
+//                            @Override
+//                            public void onServiceConnected(ComponentName className,
+//                                                           IBinder service) {
+//                                // We've bound to LocalService, cast the IBinder and get LocalService instance
+//                                ServerService.ServerBinder binder = (ServerService.ServerBinder) service;
+//                                mService = binder.getService();
+//                                mBound = true;
+//
+//                                onStarted(mService.getURL());
+//                            }
+//
+//                            @Override
+//                            public void onServiceDisconnected(ComponentName arg0) {
+//                                mBound = false;
+//                            }
+//                        };
+//                        Intent intent = new Intent(ServerActivity.this, ServerService.class);
+//                        startService(intent);
+//                        if (!mBound)
+//                            //android.app.ServiceConnectionLeaked: Activity euphoria.psycho.funny.activity.ServerActivity has leaked ServiceConnection
+//                            bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+//
+//                    }
+//                });
 
-                    @Override
-                    public void onGlobalLayout() {
+        NativeMethods.createDatabase(new File(Environment.getExternalStorageDirectory(), "notes2.db").getAbsolutePath());
+    }
 
-                        mConnection = new ServiceConnection() {
-
-                            @Override
-                            public void onServiceConnected(ComponentName className,
-                                                           IBinder service) {
-                                // We've bound to LocalService, cast the IBinder and get LocalService instance
-                                ServerService.ServerBinder binder = (ServerService.ServerBinder) service;
-                                mService = binder.getService();
-                                mBound = true;
-
-                                onStarted(mService.getURL());
-                            }
-
-                            @Override
-                            public void onServiceDisconnected(ComponentName arg0) {
-                                mBound = false;
-                            }
-                        };
-                        Intent intent = new Intent(ServerActivity.this, ServerService.class);
-                        startService(intent);
-                        if (!mBound)
-                            //android.app.ServiceConnectionLeaked: Activity euphoria.psycho.funny.activity.ServerActivity has leaked ServiceConnection
-                            bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
-
-                    }
-                });
-
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mBound) {
+            try {
+                unbindService(mConnection);
+                mBound = false;
+            } catch (Exception e) {
+            }
+        }
     }
 
     @Override
@@ -227,22 +245,62 @@ public class ServerActivity extends BaseActivity {
 
     }
 
+    private void copyAssets() {
+        File targetDirectory = new File(Environment.getExternalStorageDirectory(), "server");
+        if (!targetDirectory.isDirectory()) {
+            targetDirectory.mkdir();
+        }
+//        else {
+//            return;
+//        }
+        AssetManager assetManager = getAssets();
+        String[] files = null;
+        try {
+            files = assetManager.list("server");
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to get asset file list.", e);
+        }
+        if (files != null) for (String filename : files) {
+            InputStream in = null;
+            OutputStream out = null;
+            try {
+                in = assetManager.open("server/" + filename);
+                File outFile = new File(targetDirectory, filename);
+                out = new FileOutputStream(outFile);
+                copyFile(in, out);
+            } catch (IOException e) {
+                Log.e("tag", "Failed to copy asset file: " + filename, e);
+            } finally {
+                if (in != null) {
+                    try {
+                        in.close();
+                    } catch (IOException e) {
+                        // NOOP
+                    }
+                }
+                if (out != null) {
+                    try {
+                        out.close();
+                    } catch (IOException e) {
+                        // NOOP
+                    }
+                }
+            }
+        }
+    }
+
+    private void copyFile(InputStream in, OutputStream out) throws IOException {
+        byte[] buffer = new byte[1024];
+        int read;
+        while ((read = in.read(buffer)) != -1) {
+            out.write(buffer, 0, read);
+        }
+    }
+
     @Override
     protected void onStart() {
         super.onStart();
 
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (mBound) {
-            try {
-                unbindService(mConnection);
-                mBound = false;
-            } catch (Exception e) {
-            }
-        }
     }
 
     @Override

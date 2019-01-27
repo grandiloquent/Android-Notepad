@@ -19,12 +19,16 @@ android {
         sourceCompatibility = '1.8'
         targetCompatibility = '1.8'
     }
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+        }
+    }
 }
 
 dependencies {
     implementation "com.atlassian.commonmark:commonmark:0.12.1"
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'com.google.zxing:core:3.3.3'
-    // https://mvnrepository.com/artifact/com.atlassian.commonmark/commonmark-ext-gfm-tables
     implementation "com.atlassian.commonmark:commonmark-ext-gfm-tables:0.12.1"
 }
