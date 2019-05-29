@@ -3,23 +3,26 @@ package euphoria.psycho.notepad;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.ActionMode;
+import android.os.Environment;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.Toolbar;
 
 import org.javia.arity.Symbols;
 import org.javia.arity.SyntaxException;
 import org.javia.arity.Util;
 
+import java.io.File;
+import java.io.IOException;
+import java.text.Collator;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,16 +33,22 @@ import static euphoria.psycho.notepad.Constants.EXTRA_ID;
 
 
 public class EditNoteActivity extends Activity {
-    private static final int MENU_CALCULATE = 0x3;
-    private static final int MENU_FORMAT = 0x2;
-    private static final int MENU_S_ASTERISK = 0x11;
-    private static final int MENU_S_CODE = 0x5;
-    private static final int MENU_S_DIVIDE = 0x10;
-    private static final int MENU_S_HEAD = 0x6;
-    private static final int MENU_S_PARENTHESIS = 0x7;
+    private static final int MENU_CALCULATE = 0x0;
+    private static final int MENU_FORMAT = 0x1;
+    private static final int MENU_S_ASTERISK = 0x2;
+    private static final int MENU_S_CODE = 0x3;
+    private static final int MENU_S_DIVIDE = 0x4;
+    private static final int MENU_S_HEAD = 0x5;
+    private static final int MENU_S_PARENTHESIS = 0x6;
     private static final int MENU_S_SORT_BY = 0x7;
     private static final int MENU_S_SORT_BY_YEAR = 0x8;
-    private static final int MENU_S_SUBTRACTION = 0x8;
+    private static final int MENU_S_SORT_BY_NORMAL = 0x9;
+    private static final int MENU_S_SUBTRACTION = 0x10;
+    private static final int MENU_S_EXPORT = 0x11;
+    private static final int MENU_S_CHINESE_TO_ENGLISH = 0x12;
+    private static final int MENU_S_ENGLISH_TO_CHINESE = 0x13;
+
+
     private static final String TAG = "TAG/" + EditNoteActivity.class.getCanonicalName();
     ImageButton mBold;
     private EditText mEditText;
@@ -359,7 +368,7 @@ public class EditNoteActivity extends Activity {
         long id = intent.getLongExtra(EXTRA_ID, 0);
 
         if (id != 0) {
-            mNote =DatabaseHelper.getInstance(AndroidContext.instance().get()).fetchNote(id);
+            mNote = DatabaseHelper.getInstance(AndroidContext.instance().get()).fetchNote(id);
             mNote.ID = id;
 
             mEditText.setText(mNote.Content);
@@ -381,6 +390,32 @@ public class EditNoteActivity extends Activity {
 
     }
 
+    public static void sortSelection(EditText editText) {
+        String text = editText.getText().toString();
+        if (TextUtils.isEmpty(text)) {
+            return;
+        }
+        int start = editText.getSelectionStart();
+        int end = editText.getSelectionEnd();
+
+        String selectString = text.substring(start, end);
+        String[] lines = selectString.split("\n");
+        Collator collator = Collator.getInstance(Locale.CHINA);
+
+        Arrays.sort(lines, new Comparator<String>() {
+            @Override
+            public int compare(String o1, String o2) {
+                return collator.compare(o1.trim(), o2.trim());
+            }
+        });
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < lines.length; i++) {
+            stringBuilder.append(lines[i]).append('\n');
+        }
+        editText.getText().replace(start, end, stringBuilder.toString());
+
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         menu.add(0, MENU_CALCULATE, 0, "计算(公式)");
@@ -392,7 +427,53 @@ public class EditNoteActivity extends Activity {
         menu.add(0, MENU_S_SORT_BY, 0, "排序");
         menu.add(0, MENU_S_SORT_BY_YEAR, 0, "排序(年代)");
 
+        menu.add(0, MENU_S_SORT_BY_NORMAL, 0, "排序");
+        menu.add(0, MENU_S_EXPORT, 0, "导出");
+
+        menu.add(0, MENU_S_CHINESE_TO_ENGLISH, 0, "中文到英文");
+
+        menu.add(0, MENU_S_ENGLISH_TO_CHINESE, 0, "英文到中文");
+
         return super.onCreateOptionsMenu(menu);
+    }
+
+    private void translate() {
+        final String q = EditTextUtils.selectLine(mEditText);
+
+        ThreadUtils.postOnBackgroundThread(new Runnable() {
+            @Override
+            public void run() {
+                final String baidu = TranslateUtils.chineseBaidu(q);
+                final String google = TranslateUtils.chineseGoogle(q);
+                ThreadUtils.postOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        EditTextUtils.insertBefore(mEditText,
+                                baidu + "\n\n" +
+                                        google + "\n\n");
+                    }
+                });
+            }
+        });
+    }
+    private void translateToEnglish() {
+        final String q = EditTextUtils.selectLine(mEditText);
+
+        ThreadUtils.postOnBackgroundThread(new Runnable() {
+            @Override
+            public void run() {
+                final String baidu = TranslateUtils.englishBaidu(q);
+                final String google = TranslateUtils.englishGoogle(q);
+                ThreadUtils.postOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        EditTextUtils.insertBefore(mEditText,
+                                baidu + "\n\n" +
+                                        google + "\n\n");
+                    }
+                });
+            }
+        });
     }
 
     @Override
@@ -425,6 +506,22 @@ public class EditNoteActivity extends Activity {
 
             case MENU_S_DIVIDE:
                 replaceString(item.getItemId());
+                return true;
+            case MENU_S_SORT_BY_NORMAL:
+                StringUtils.orderEditText(mEditText);
+                return true;
+            case MENU_S_EXPORT:
+                try {
+                    StringUtils.writeAllText(new File(Environment.getExternalStorageDirectory(), "export.txt").getAbsolutePath(), mEditText.getText().toString());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                return true;
+            case MENU_S_ENGLISH_TO_CHINESE:
+                translate();
+                return true;
+            case MENU_S_CHINESE_TO_ENGLISH:
+                translateToEnglish();
                 return true;
         }
         return super.onOptionsItemSelected(item);
